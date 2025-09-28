@@ -169,42 +169,43 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
-      <Header />
+    <div className="flex h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
+      {/* Questions Sidebar - Full Height */}
+      <QuestionsSidebar messages={messages} />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden">
-        <QuestionsSidebar messages={messages} />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header />
         <AnswersArea messages={messages} />
-      </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="flex-shrink-0 px-4 pb-2">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg">
-              <p className="font-semibold">Error:</p>
-              <p>{error}</p>
+        {/* Error Message */}
+        {error && (
+          <div className="flex-shrink-0 px-4 pb-2">
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg">
+                <p className="font-semibold">Error:</p>
+                <p>{error}</p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <SearchBar
-        query={query}
-        setQuery={setQuery}
-        loading={loading}
-        handleSearch={handleSearch}
-        handleKeyPress={handleKeyPress}
-        showUploadModal={showUploadModal}
-        setShowUploadModal={setShowUploadModal}
-        uploadLoading={uploadLoading}
-        uploadedFiles={uploadedFiles}
-        deletingFile={deletingFile}
-        handleFileUpload={handleFileUpload}
-        handleDeleteFile={handleDeleteFile}
-        messages={messages}
-      />
+        <SearchBar
+          query={query}
+          setQuery={setQuery}
+          loading={loading}
+          handleSearch={handleSearch}
+          handleKeyPress={handleKeyPress}
+          showUploadModal={showUploadModal}
+          setShowUploadModal={setShowUploadModal}
+          uploadLoading={uploadLoading}
+          uploadedFiles={uploadedFiles}
+          deletingFile={deletingFile}
+          handleFileUpload={handleFileUpload}
+          handleDeleteFile={handleDeleteFile}
+          messages={messages}
+        />
+      </div>
     </div>
   );
 }
