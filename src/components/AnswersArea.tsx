@@ -7,9 +7,23 @@ interface Message {
 
 interface AnswersAreaProps {
   messages: Message[];
+  editingMessageId?: string | null;
+  editingText?: string;
+  setEditingText?: (text: string) => void;
+  onEditQuestion?: (messageId: string, currentQuestion: string) => void;
+  onSaveEdit?: (messageId: string) => void;
+  onCancelEdit?: () => void;
 }
 
-export default function AnswersArea({ messages }: AnswersAreaProps) {
+export default function AnswersArea({
+  messages,
+  editingMessageId,
+  editingText,
+  setEditingText,
+  onEditQuestion,
+  onSaveEdit,
+  onCancelEdit
+}: AnswersAreaProps) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -24,10 +38,51 @@ export default function AnswersArea({ messages }: AnswersAreaProps) {
                       {index + 1}
                     </div>
                     <div className="flex-1">
-                      <h2 className="text-xl font-semibold text-white mb-2">{message.question}</h2>
-                      <p className="text-sm text-gray-400">
-                        Asked at {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                      {editingMessageId === message.id ? (
+                        /* Edit Mode */
+                        <div className="space-y-3">
+                          <textarea
+                            value={editingText}
+                            onChange={(e) => setEditingText?.(e.target.value)}
+                            className="w-full p-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                            rows={3}
+                            placeholder="Edit your question..."
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => onSaveEdit?.(message.id)}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={onCancelEdit}
+                              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Display Mode */
+                        <div className="group">
+                          <div className="flex items-start justify-between">
+                            <h2 className="text-xl font-semibold text-white mb-2 flex-1">{message.question}</h2>
+                            <button
+                              onClick={() => onEditQuestion?.(message.id, message.question)}
+                              className="opacity-0 group-hover:opacity-100 ml-2 p-1 text-gray-400 hover:text-blue-400 transition-all"
+                              title="Edit question"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                          </div>
+                          <p className="text-sm text-gray-400">
+                            Asked at {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

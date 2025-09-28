@@ -22,6 +22,8 @@ export default function Home() {
   const [deletingFile, setDeletingFile] = useState<string | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState('');
 
   // Load uploaded files on component mount
   const loadUploadedFiles = async () => {
@@ -168,17 +170,91 @@ export default function Home() {
     }
   };
 
+  const handleEditQuestion = (messageId: string, currentQuestion: string) => {
+    setEditingMessageId(messageId);
+    setEditingText(currentQuestion);
+  };
+
+  const handleSaveEdit = async (messageId: string) => {
+    if (!editingText.trim()) return;
+
+    const editedQuestion = editingText.trim();
+
+    // Update the question in the message
+    setMessages(prev => prev.map(msg =>
+      msg.id === messageId
+        ? { ...msg, question: editedQuestion, answer: '', timestamp: new Date() }
+        : msg
+    ));
+
+    // Clear edit state
+    setEditingMessageId(null);
+    setEditingText('');
+
+    // Re-search with the edited question
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: editedQuestion }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update the message with the new answer
+        setMessages(prev => prev.map(msg =>
+          msg.id === messageId
+            ? { ...msg, answer: data.answer }
+            : msg
+        ));
+      } else {
+        setError(data.error || 'Search failed');
+      }
+    } catch (err) {
+      setError('Failed to connect to search service');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditingText('');
+  };
+
   return (
     <div className="flex h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
       {/* Questions Sidebar - Full Height */}
-      <QuestionsSidebar messages={messages} />
+      <QuestionsSidebar
+        messages={messages}
+        editingMessageId={editingMessageId}
+        editingText={editingText}
+        setEditingText={setEditingText}
+        onEditQuestion={handleEditQuestion}
+        onSaveEdit={handleSaveEdit}
+        onCancelEdit={handleCancelEdit}
+      />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {messages.length > 0 ? (
           <>
             <Header />
-            <AnswersArea messages={messages} />
+            <AnswersArea
+              messages={messages}
+              editingMessageId={editingMessageId}
+              editingText={editingText}
+              setEditingText={setEditingText}
+              onEditQuestion={handleEditQuestion}
+              onSaveEdit={handleSaveEdit}
+              onCancelEdit={handleCancelEdit}
+            />
 
             {/* Error Message */}
             {error && (
