@@ -4,14 +4,13 @@ import { useState, useEffect } from 'react';
 
 export default function Home() {
   const [query, setQuery] = useState('');
-  const [answer, setAnswer] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [uploadLoading, setUploadLoading] = useState(false);
-  const [sources, setSources] = useState<any[]>([]);
   const [deletingFile, setDeletingFile] = useState<string | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [messages, setMessages] = useState<Array<{id: string, question: string, answer: string, timestamp: Date}>>([]);
 
   // Load uploaded files on component mount
   const loadUploadedFiles = async () => {
@@ -36,9 +35,20 @@ export default function Home() {
   const handleSearch = async () => {
     if (!query.trim()) return;
 
+    const newMessageId = Date.now().toString();
+    const userQuestion = query.trim();
+
+    // Add user message immediately
+    setMessages(prev => [...prev, {
+      id: newMessageId,
+      question: userQuestion,
+      answer: '',
+      timestamp: new Date()
+    }]);
+
     setLoading(true);
     setError('');
-    setAnswer('');
+    setQuery(''); // Clear input immediately
 
     try {
       const response = await fetch('/api/search', {
@@ -46,19 +56,27 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query: userQuestion }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setAnswer(data.answer);
-        setSources(data.sources || []);
+        // Update the message with the answer
+        setMessages(prev => prev.map(msg =>
+          msg.id === newMessageId
+            ? { ...msg, answer: data.answer }
+            : msg
+        ));
       } else {
         setError(data.error || 'Search failed');
+        // Remove the message if there was an error
+        setMessages(prev => prev.filter(msg => msg.id !== newMessageId));
       }
     } catch (err) {
       setError('Failed to connect to search service');
+      // Remove the message if there was an error
+      setMessages(prev => prev.filter(msg => msg.id !== newMessageId));
     } finally {
       setLoading(false);
     }
@@ -128,11 +146,6 @@ export default function Home() {
 
       if (data.success) {
         setUploadedFiles(prev => prev.filter(f => f !== filename));
-        // Clear answer and sources if they're from the deleted file
-        if (sources.some(s => s.file === filename)) {
-          setAnswer('');
-          setSources([]);
-        }
         alert(`Successfully deleted ${filename}`);
       } else {
         alert(`Error: ${data.error || 'Failed to delete file'}`);
@@ -144,20 +157,74 @@ export default function Home() {
     }
   };
 
-  return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
-            Local AI Search Engine
-          </h1>
-          <p className="text-gray-300 text-lg">
-            Powered by Ollama + LlamaIndex + Qdrant
-          </p>
-        </div>
+  const handleExampleClick = (example: string) => {
+    setQuery(example);
+  };
 
-        <div className="bg-gray-800 rounded-lg shadow-2xl p-6 mb-8">
-          <div className="flex gap-4">
+  return (
+    <div className="flex flex-col h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
+      {/* Header */}
+      <div className="flex-shrink-0 text-center py-8 px-4">
+        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+          Local AI Search Engine
+        </h1>
+        <p className="text-gray-300">
+          Powered by Ollama + LlamaIndex + Qdrant
+        </p>
+      </div>
+
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Messages */}
+          {messages.map((message) => (
+            <div key={message.id} className="space-y-4">
+              {/* User Question */}
+              <div className="flex justify-end">
+                <div className="bg-blue-600 rounded-2xl px-4 py-3 max-w-[80%]">
+                  <p className="text-white">{message.question}</p>
+                </div>
+              </div>
+
+              {/* AI Answer */}
+              <div className="flex justify-start">
+                <div className="bg-gray-700 rounded-2xl px-4 py-3 max-w-[80%]">
+                  {message.answer ? (
+                    <p className="text-gray-100 whitespace-pre-wrap leading-relaxed">
+                      {message.answer}
+                    </p>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <svg className="animate-spin h-4 w-4 text-gray-400" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      <span className="text-gray-400">Thinking...</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="flex-shrink-0 px-4 pb-2">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg">
+              <p className="font-semibold">Error:</p>
+              <p>{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Search Bar - Fixed at Bottom */}
+      <div className="flex-shrink-0 p-4 border-t border-gray-700 bg-gray-800/50 backdrop-blur-sm">
+        <div className="max-w-4xl mx-auto">
+          <div className="relative">
             <div className="relative flex-1">
               <input
                 type="text"
@@ -165,149 +232,151 @@ export default function Home() {
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask me anything about your uploaded PDF documents..."
-                className="w-full pl-4 pr-12 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                className="w-full pl-4 pr-20 py-4 bg-gray-700 text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400 text-lg"
                 disabled={loading}
               />
-              <button
-                onClick={() => setShowUploadModal(!showUploadModal)}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-green-400 hover:text-green-300 transition-colors"
-                title="Upload PDF"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              </button>
-            </div>
-            <button
-              onClick={handleSearch}
-              disabled={loading || !query.trim()}
-              className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              {loading ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Searching...
-                </span>
-              ) : (
-                'Search'
-              )}
-            </button>
-          </div>
 
-          {/* Upload Modal/Dropdown */}
-          {showUploadModal && (
-            <div className="mt-4 p-4 bg-gray-900 rounded-lg border border-gray-600">
-              <h3 className="text-lg font-semibold mb-3 text-green-400">📄 Upload PDF Documents</h3>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="flex-1">
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileUpload}
-                    disabled={uploadLoading}
-                    className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-green-500 file:to-blue-600 file:text-white hover:file:from-green-600 hover:file:to-blue-700 file:disabled:opacity-50 file:cursor-pointer disabled:file:cursor-not-allowed"
-                  />
-                </div>
-                {uploadLoading && (
-                  <div className="flex items-center gap-2 text-green-400">
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Processing...
+              {/* Upload Button */}
+              <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
+                <button
+                  onClick={() => setShowUploadModal(!showUploadModal)}
+                  className="p-2 text-green-400 hover:text-green-300 transition-colors rounded-lg hover:bg-gray-600"
+                  title="Upload PDF"
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </button>
+
+                {/* Upload Dropdown */}
+                {showUploadModal && (
+                  <div className="absolute right-0 bottom-full mb-2 w-80 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50">
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-white">📄 Upload PDF</h3>
+                        <button
+                          onClick={() => setShowUploadModal(false)}
+                          className="text-gray-400 hover:text-gray-300 p-1 rounded hover:bg-gray-700 transition-all"
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      {/* Upload Area */}
+                      <div className="relative border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-green-500 transition-colors mb-4">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="p-2 bg-green-600/20 rounded-full">
+                            <svg className="h-6 w-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-white font-medium text-sm">Drop PDF files here</p>
+                            <p className="text-gray-400 text-xs">or click to browse</p>
+                          </div>
+                        </div>
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          onChange={handleFileUpload}
+                          disabled={uploadLoading}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                        />
+                      </div>
+
+                      {/* Upload Status */}
+                      {uploadLoading && (
+                        <div className="mb-4 p-3 bg-green-600/10 border border-green-600/30 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <svg className="animate-spin h-4 w-4 text-green-400" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            <span className="text-green-400 text-sm font-medium">Processing PDF...</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Uploaded Files */}
+                      {uploadedFiles.length > 0 && (
+                        <div className="mb-4">
+                          <h4 className="text-xs font-medium text-gray-300 mb-2">Documents ({uploadedFiles.length})</h4>
+                          <div className="space-y-1 max-h-32 overflow-y-auto">
+                            {uploadedFiles.map((filename, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between p-2 bg-gray-700/50 rounded border border-gray-600/50 group"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="p-1 bg-red-600/20 rounded">
+                                    <svg className="h-3 w-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                  </div>
+                                  <span className="text-gray-200 text-xs font-medium truncate">{filename}</span>
+                                </div>
+                                <button
+                                  onClick={() => handleDeleteFile(filename)}
+                                  disabled={deletingFile === filename}
+                                  className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-400 transition-all disabled:opacity-50"
+                                  title="Delete file"
+                                >
+                                  {deletingFile === filename ? (
+                                    <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  )}
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Info Text */}
+                      <p className="text-xs text-gray-500 text-center">
+                        Upload PDFs to build your searchable library
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
 
-              {uploadedFiles.length > 0 && (
-                <div>
-                  <p className="text-sm text-gray-400 mb-2">Uploaded files:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {uploadedFiles.map((filename, index) => (
-                      <div
-                        key={index}
-                        className="group flex items-center gap-2 px-3 py-1 bg-green-600/20 border border-green-500/30 rounded-full text-sm text-green-300"
-                      >
-                        <span>📄 {filename}</span>
-                        <button
-                          onClick={() => handleDeleteFile(filename)}
-                          disabled={deletingFile === filename}
-                          className="ml-1 text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
-                          title="Delete file"
-                        >
-                          {deletingFile === filename ? (
-                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                            </svg>
-                          ) : (
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          )}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Send Button */}
+              <button
+                onClick={handleSearch}
+                disabled={loading || !query.trim()}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {loading ? (
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                ) : (
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
 
-              <div className="flex justify-between items-center mt-4">
-                <p className="text-xs text-gray-500">
-                  Upload PDF files to build your searchable document library.
-                </p>
-                <button
-                  onClick={() => setShowUploadModal(false)}
-                  className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
+          {/* Welcome Message - Only show when no messages */}
+          {messages.length === 0 && (
+            <div className="text-center text-gray-400 mt-6">
+              <p className="mb-4">Upload PDFs and ask questions about the content</p>
             </div>
           )}
         </div>
-
-        {error && (
-          <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6">
-            <p className="font-semibold">Error:</p>
-            <p>{error}</p>
-          </div>
-        )}
-
-        {answer && (
-          <div className="bg-gray-800 rounded-lg shadow-2xl p-6">
-            <h2 className="text-2xl font-semibold mb-4 text-blue-400">Answer:</h2>
-            <div className="prose prose-invert max-w-none">
-              <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">
-                {answer}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {!answer && !error && !loading && (
-          <div className="text-center text-gray-400 mt-12">
-            <p className="mb-4">Upload PDFs first, then try asking questions about their content:</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
-              {[
-                "What ia Java?",
-                "Explain about Object",
-              ].map((example, i) => (
-                <button
-                  key={i}
-                  onClick={() => setQuery(example)}
-                  className="text-left px-4 py-2 bg-gray-700/50 rounded-lg hover:bg-gray-700 transition-colors text-sm"
-                >
-                  "{example}"
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
-    </main>
+    </div>
   );
 }
