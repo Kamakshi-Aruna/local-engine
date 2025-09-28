@@ -4,9 +4,6 @@ export default function Header() {
       <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
         Local AI Search Engine
       </h1>
-      <p className="text-gray-300">
-        Powered by Ollama + LlamaIndex + Qdrant
-      </p>
     </div>
   );
 }
