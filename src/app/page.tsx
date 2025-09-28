@@ -173,39 +173,111 @@ export default function Home() {
         </p>
       </div>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Messages */}
-          {messages.map((message) => (
-            <div key={message.id} className="space-y-4">
-              {/* User Question */}
-              <div className="flex justify-end">
-                <div className="bg-blue-600 rounded-2xl px-4 py-3 max-w-[80%]">
-                  <p className="text-white">{message.question}</p>
-                </div>
-              </div>
-
-              {/* AI Answer */}
-              <div className="flex justify-start">
-                <div className="bg-gray-700 rounded-2xl px-4 py-3 max-w-[80%]">
-                  {message.answer ? (
-                    <p className="text-gray-100 whitespace-pre-wrap leading-relaxed">
-                      {message.answer}
-                    </p>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <svg className="animate-spin h-4 w-4 text-gray-400" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      <span className="text-gray-400">Thinking...</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+      {/* Main Content Area */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Questions Sidebar - Only show when there are messages */}
+        {messages.length > 0 && (
+          <div className="w-80 bg-gray-900/50 border-r border-gray-700 flex flex-col">
+            <div className="p-4 border-b border-gray-700">
+              <h3 className="text-lg font-semibold text-white mb-2">Your Questions</h3>
+              <p className="text-sm text-gray-400">Click on any question to view its answer</p>
             </div>
-          ))}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {messages.map((message, index) => (
+                <button
+                  key={message.id}
+                  onClick={() => {
+                    // Scroll to the answer or highlight it
+                    const answerElement = document.getElementById(`answer-${message.id}`);
+                    if (answerElement) {
+                      answerElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                  }}
+                  className={`w-full text-left p-3 rounded-lg border transition-all hover:bg-gray-700/50 ${
+                    index === messages.length - 1
+                      ? 'bg-blue-600/20 border-blue-500/50 text-blue-200'
+                      : 'bg-gray-800/50 border-gray-600/50 text-gray-300 hover:border-gray-500'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-xs text-white font-medium mt-0.5">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium line-clamp-2">{message.question}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Answer Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {messages.length > 0 ? (
+              <div className="max-w-4xl mx-auto space-y-8">
+                {messages.map((message, index) => (
+                  <div key={message.id} id={`answer-${message.id}`} className="space-y-4">
+                    {/* Question Header */}
+                    <div className="border-b border-gray-700 pb-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm text-white font-medium">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          <h2 className="text-xl font-semibold text-white mb-2">{message.question}</h2>
+                          <p className="text-sm text-gray-400">
+                            Asked at {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Answer */}
+                    <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+                      {message.answer ? (
+                        <div className="prose prose-invert max-w-none">
+                          <p className="text-gray-100 whitespace-pre-wrap leading-relaxed text-lg">
+                            {message.answer}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <svg className="animate-spin h-5 w-5 text-blue-400" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          <span className="text-blue-400 font-medium">Generating answer...</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* Empty State */
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center text-gray-400 max-w-md">
+                  <div className="mb-6">
+                    <div className="inline-flex items-center gap-2 mb-4">
+                      <div className="p-3 bg-blue-600/20 rounded-full">
+                        <svg className="h-8 w-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <h2 className="text-xl font-semibold text-white mb-2">Welcome to Local Search</h2>
+                    <p className="text-gray-400">Start asking questions about your uploaded documents</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
