@@ -5,9 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "ingest": "npx tsx scripts/ingest.ts"
   },
   "dependencies": {
+    "@qdrant/js-client-rest": "^1.15.1",
     "dotenv": "^17.2.2",
     "llamaindex": "^0.8.29",
     "next": "15.5.4",

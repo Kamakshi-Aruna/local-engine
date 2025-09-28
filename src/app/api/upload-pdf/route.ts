@@ -54,14 +54,23 @@ export async function POST(request: NextRequest) {
     // Generate embeddings and store in Qdrant
     const { client, collectionName } = await getVectorStore();
 
-    // Get current collection info to determine next ID
-    let startId = 1000; // Start PDF documents at ID 1000 to avoid conflicts
+    // Ensure collection exists, create if it doesn't
     try {
-      const collectionInfo = await client.getCollection(collectionName);
-      startId = 1000 + Math.floor(Math.random() * 10000); // Random ID to avoid conflicts
+      await client.getCollection(collectionName);
     } catch (error) {
-      // Collection might not exist, use default startId
+      // Collection doesn't exist, create it
+      console.log(`Creating collection: ${collectionName}`);
+      await client.createCollection(collectionName, {
+        vectors: {
+          size: 4096, // Ollama embedding dimension
+          distance: "Cosine",
+        },
+      });
+      console.log(`✅ Created collection: ${collectionName}`);
     }
+
+    // Get current collection info to determine next ID
+    let startId = 1000 + Math.floor(Math.random() * 10000); // Random ID to avoid conflicts
 
     const points: any[] = [];
 

@@ -25,6 +25,17 @@ export async function POST(request: NextRequest) {
     // Get vector store config
     const { client, collectionName } = await getVectorStore();
 
+    // Check if collection exists
+    try {
+      await client.getCollection(collectionName);
+    } catch (error) {
+      return NextResponse.json({
+        success: true,
+        answer: "No documents have been uploaded yet. Please upload some PDF documents first.",
+        query: query,
+      });
+    }
+
     // Generate embedding for the query
     const embeddingResponse = await fetch("http://localhost:11434/api/embeddings", {
       method: "POST",
@@ -63,14 +74,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Extract text from search results
-    const relevantTexts = searchResult
-      .map((result: any) => result.payload?.text || "")
-      .filter((text: string) => text.length > 0)
-      .join("\n\n");
+    // Extract text and metadata from search results
+    const sources = searchResult.map((result: any) => ({
+      text: result.payload?.text || "",
+      source: result.payload?.source || "unknown",
+      chunk_index: result.payload?.chunk_index || 0,
+      score: result.score || 0
+    })).filter((item: any) => item.text.length > 0);
+
+    const relevantTexts = sources.map(s => s.text).join("\n\n");
 
     // Generate response using Ollama
-    const prompt = `Based on the following context, please answer the question.
+    const prompt = `Based on the following context, please answer the question. Use ONLY the information provided in the context. If the answer is not in the context, say "I cannot find this information in the uploaded documents."
 
 Context:
 ${relevantTexts}
@@ -84,7 +99,7 @@ Answer:`;
       messages: [
         {
           role: "system",
-          content: "You are a helpful assistant that answers questions based on the provided context. Be concise and accurate."
+          content: "You are a helpful assistant that answers questions based ONLY on the provided context. Do not use external knowledge. If the answer is not in the context, clearly state that."
         },
         {
           role: "user",
@@ -97,6 +112,12 @@ Answer:`;
       success: true,
       answer: response.message.content,
       query: query,
+      sources: sources.map(s => ({
+        file: s.source,
+        chunk: s.chunk_index,
+        score: s.score,
+        preview: s.text.substring(0, 100) + "..."
+      }))
     });
 
   } catch (error) {

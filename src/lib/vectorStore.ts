@@ -13,7 +13,7 @@ export async function getVectorStore() {
 
   const client = new QdrantClient(config);
 
-  const collectionName = process.env.QDRANT_COLLECTION || "knowledge_base";
+  const collectionName = process.env.QDRANT_COLLECTION || "pdf_documents";
 
   // Return a simplified object that the API route can use
   return {

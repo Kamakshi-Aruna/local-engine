@@ -1,13 +1,14 @@
 import * as dotenv from "dotenv";
-import { Document, Settings, Ollama, OllamaEmbedding } from "llamaindex";
+import { Settings, Ollama, OllamaEmbedding } from "llamaindex";
 import { QdrantClient } from "@qdrant/js-client-rest";
 import * as fs from "fs";
+import * as path from "path";
 
 dotenv.config({ path: ".env.local" });
 
-async function ingestDocuments() {
+async function ingestPDFs() {
   try {
-    console.log("🚀 Starting document ingestion...");
+    console.log("🚀 Starting PDF ingestion...");
 
     // Configure Ollama for both LLM and embeddings
     Settings.llm = new Ollama({
@@ -18,19 +19,12 @@ async function ingestDocuments() {
       model: process.env.OLLAMA_MODEL || "llama3",
     });
 
-    // Initialize Qdrant client with API key support
-    const config: any = {
+    // Initialize Qdrant client (local only)
+    const client = new QdrantClient({
       url: process.env.QDRANT_URL || "http://localhost:6333",
-    };
+    });
 
-    // Add API key if provided (for Qdrant Cloud)
-    if (process.env.QDRANT_API_KEY) {
-      config.apiKey = process.env.QDRANT_API_KEY;
-    }
-
-    const client = new QdrantClient(config);
-
-    const collectionName = process.env.QDRANT_COLLECTION || "knowledge_base";
+    const collectionName = process.env.QDRANT_COLLECTION || "pdf_documents";
 
     // Check if collection exists, if yes delete it (for fresh start)
     try {
@@ -49,46 +43,39 @@ async function ingestDocuments() {
     });
     console.log("✅ Created new collection:", collectionName);
 
-    // Read the knowledge base file
-    const content = fs.readFileSync("./data/knowledge_base.txt", "utf-8");
+    // Look for PDF files in data directory
+    const dataDir = "./data";
+    const pdfFiles = fs.readdirSync(dataDir).filter(file => file.endsWith('.pdf'));
 
-    // Split content into Q&A pairs
-    const qaPairs = content.split("\n\n").filter(pair => pair.trim());
+    if (pdfFiles.length === 0) {
+      console.log("❌ No PDF files found in data directory");
+      console.log("📁 Please add PDF files to the ./data directory");
+      return;
+    }
 
-    console.log(`📄 Processing ${qaPairs.length} Q&A pairs from knowledge base`);
+    console.log(`📄 Found ${pdfFiles.length} PDF files to process`);
 
-    // Process each Q&A pair and add to Qdrant
-    const points: any[] = [];
+    // Process each PDF file using the upload API
+    for (let i = 0; i < pdfFiles.length; i++) {
+      const pdfFile = pdfFiles[i];
+      const filePath = path.join(dataDir, pdfFile);
 
-    for (let i = 0; i < qaPairs.length; i++) {
-      const text = qaPairs[i];
-      console.log(`🔄 Processing pair ${i + 1}/${qaPairs.length}`);
+      console.log(`🔄 Processing PDF ${i + 1}/${pdfFiles.length}: ${pdfFile}`);
 
-      // Generate embedding for this text
-      const embedding = await Settings.embedModel.getTextEmbedding(text);
+      try {
+        // Read PDF file
+        const pdfBuffer = fs.readFileSync(filePath);
 
-      if (embedding && embedding.length > 0) {
-        points.push({
-          id: i,
-          vector: embedding,
-          payload: {
-            text: text,
-            source: "knowledge_base.txt",
-            index: i,
-          }
-        });
+        // Use the same PDF processing logic from upload-pdf route
+        await processPDFFile(pdfBuffer, pdfFile, client, collectionName);
+
+        console.log(`✅ Successfully processed: ${pdfFile}`);
+      } catch (error) {
+        console.error(`❌ Error processing ${pdfFile}:`, error);
       }
     }
 
-    // Upload all points to Qdrant
-    console.log("⬆️ Uploading vectors to Qdrant...");
-    await client.upsert(collectionName, {
-      wait: true,
-      points: points,
-    });
-
-    console.log("✅ Documents successfully ingested into Qdrant!");
-    console.log(`📊 Total vectors stored: ${points.length}`);
+    console.log("✅ All PDFs successfully ingested into Qdrant!");
     console.log("📊 You can view your vectors at: http://localhost:6333/dashboard");
 
   } catch (error) {
@@ -97,5 +84,90 @@ async function ingestDocuments() {
   }
 }
 
+async function processPDFFile(buffer: Buffer, fileName: string, client: QdrantClient, collectionName: string) {
+  let textContent = '';
+
+  try {
+    // Use pdf-parse to extract text
+    const pdfParse = require('pdf-parse');
+    const data = await pdfParse(buffer);
+    textContent = data.text;
+  } catch (pdfError) {
+    throw new Error(`Failed to parse PDF: ${pdfError}`);
+  }
+
+  if (!textContent || textContent.trim().length === 0) {
+    throw new Error("PDF appears to be empty or unreadable");
+  }
+
+  // Split text into chunks (roughly 500 characters each)
+  const chunks = splitIntoChunks(textContent, 500);
+
+  // Generate random starting ID to avoid conflicts
+  const startId = 1000 + Math.floor(Math.random() * 10000);
+  const points: any[] = [];
+
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+
+    // Generate embedding for this chunk using Ollama
+    const embedding = await Settings.embedModel.getTextEmbedding(chunk);
+
+    if (embedding && embedding.length > 0) {
+      const point = {
+        id: startId + i,
+        vector: embedding,
+        payload: {
+          text: chunk,
+          source: fileName,
+          type: "pdf",
+          chunk_index: i,
+          total_chunks: chunks.length,
+        }
+      };
+
+      points.push(point);
+    }
+  }
+
+  // Upload all points to Qdrant
+  if (points.length > 0) {
+    await client.upsert(collectionName, {
+      wait: true,
+      points: points,
+    });
+  }
+
+  console.log(`   📊 Created ${points.length} chunks for ${fileName}`);
+}
+
+// Helper function to split text into chunks
+function splitIntoChunks(text: string, maxChunkSize: number): string[] {
+  const chunks: string[] = [];
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+
+  let currentChunk = '';
+
+  for (const sentence of sentences) {
+    const trimmedSentence = sentence.trim();
+    if (trimmedSentence.length === 0) continue;
+
+    // If adding this sentence would exceed the chunk size, save current chunk
+    if (currentChunk.length + trimmedSentence.length > maxChunkSize && currentChunk.length > 0) {
+      chunks.push(currentChunk.trim());
+      currentChunk = trimmedSentence;
+    } else {
+      currentChunk += (currentChunk.length > 0 ? '. ' : '') + trimmedSentence;
+    }
+  }
+
+  // Add the last chunk if it has content
+  if (currentChunk.trim().length > 0) {
+    chunks.push(currentChunk.trim());
+  }
+
+  return chunks;
+}
+
 // Run the ingestion
-ingestDocuments();
+ingestPDFs();
