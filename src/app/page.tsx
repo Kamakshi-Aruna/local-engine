@@ -175,36 +175,76 @@ export default function Home() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
-        <AnswersArea messages={messages} />
+        {messages.length > 0 ? (
+          <>
+            <Header />
+            <AnswersArea messages={messages} />
 
-        {/* Error Message */}
-        {error && (
-          <div className="flex-shrink-0 px-4 pb-2">
-            <div className="max-w-4xl mx-auto">
-              <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg">
-                <p className="font-semibold">Error:</p>
-                <p>{error}</p>
+            {/* Error Message */}
+            {error && (
+              <div className="flex-shrink-0 px-4 pb-2">
+                <div className="max-w-4xl mx-auto">
+                  <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg">
+                    <p className="font-semibold">Error:</p>
+                    <p>{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <SearchBar
+              query={query}
+              setQuery={setQuery}
+              loading={loading}
+              handleSearch={handleSearch}
+              handleKeyPress={handleKeyPress}
+              showUploadModal={showUploadModal}
+              setShowUploadModal={setShowUploadModal}
+              uploadLoading={uploadLoading}
+              uploadedFiles={uploadedFiles}
+              deletingFile={deletingFile}
+              handleFileUpload={handleFileUpload}
+              handleDeleteFile={handleDeleteFile}
+              messages={messages}
+            />
+          </>
+        ) : (
+          /* Centered Layout for No Messages */
+          <>
+            <Header />
+
+            {/* Centered Search Area */}
+            <div className="flex-1 flex items-center justify-center px-8">
+              {/* Error Message for Empty State */}
+              {error && (
+                <div className="absolute top-32 left-1/2 transform -translate-x-1/2 w-full max-w-2xl px-4">
+                  <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg">
+                    <p className="font-semibold">Error:</p>
+                    <p>{error}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="w-full max-w-4xl">
+                <SearchBar
+                  query={query}
+                  setQuery={setQuery}
+                  loading={loading}
+                  handleSearch={handleSearch}
+                  handleKeyPress={handleKeyPress}
+                  showUploadModal={showUploadModal}
+                  setShowUploadModal={setShowUploadModal}
+                  uploadLoading={uploadLoading}
+                  uploadedFiles={uploadedFiles}
+                  deletingFile={deletingFile}
+                  handleFileUpload={handleFileUpload}
+                  handleDeleteFile={handleDeleteFile}
+                  messages={messages}
+                />
               </div>
             </div>
-          </div>
+          </>
         )}
-
-        <SearchBar
-          query={query}
-          setQuery={setQuery}
-          loading={loading}
-          handleSearch={handleSearch}
-          handleKeyPress={handleKeyPress}
-          showUploadModal={showUploadModal}
-          setShowUploadModal={setShowUploadModal}
-          uploadLoading={uploadLoading}
-          uploadedFiles={uploadedFiles}
-          deletingFile={deletingFile}
-          handleFileUpload={handleFileUpload}
-          handleDeleteFile={handleDeleteFile}
-          messages={messages}
-        />
       </div>
     </div>
   );

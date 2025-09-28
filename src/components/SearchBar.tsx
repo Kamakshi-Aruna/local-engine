@@ -31,8 +31,10 @@ export default function SearchBar({
   handleDeleteFile,
   messages,
 }: SearchBarProps) {
+  const isEmptyState = messages.length === 0;
+
   return (
-    <div className="flex-shrink-0 p-4 border-t border-gray-700 bg-gray-800/50 backdrop-blur-sm">
+    <div className={`flex-shrink-0 p-4 ${!isEmptyState ? 'bg-gray-800/50 backdrop-blur-sm' : ''}`}>
       <div className="max-w-4xl mx-auto">
         <div className="relative">
           <div className="relative flex-1">
