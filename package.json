@@ -6,23 +6,26 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "ingest": "npx tsx scripts/ingest.ts"
+    "deploy-worker": "wrangler deploy",
+    "create-vectorize": "wrangler vectorize create pdf-search-index --dimensions=768 --metric=cosine"
   },
   "dependencies": {
-    "@qdrant/js-client-rest": "^1.15.1",
+    "@types/node-fetch": "^2.6.13",
     "dotenv": "^17.2.2",
-    "llamaindex": "^0.8.29",
     "next": "15.5.4",
+    "node-fetch": "^3.3.2",
     "pdf-parse": "^1.1.1",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250927.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "^4.40.2"
   }
 }

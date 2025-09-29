@@ -25,25 +25,8 @@ export default function Home() {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
 
-  // Load uploaded files on component mount
-  const loadUploadedFiles = async () => {
-    try {
-      const response = await fetch('/api/list-files');
-      const data = await response.json();
-
-      if (data.success) {
-        setUploadedFiles(data.files);
-      }
-    } catch (err) {
-      // Silently fail - it's okay if we can't load files
-      console.error('Failed to load uploaded files:', err);
-    }
-  };
-
-  // Load files when component mounts
-  useEffect(() => {
-    loadUploadedFiles();
-  }, []);
+  // Files are stored locally in state only (Cloudflare Vectorize doesn't have list API)
+  // Files will reset on page refresh
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -102,8 +85,18 @@ export default function Home() {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('📁 File upload triggered');
     const file = e.target.files?.[0];
-    if (!file || file.type !== 'application/pdf') {
+
+    if (!file) {
+      console.log('❌ No file selected');
+      setError('Please select a file');
+      return;
+    }
+
+    console.log('📄 File selected:', file.name, 'Type:', file.type, 'Size:', file.size);
+
+    if (file.type !== 'application/pdf') {
       setError('Please select a PDF file');
       return;
     }
@@ -112,6 +105,7 @@ export default function Home() {
     setError('');
 
     try {
+      console.log('🚀 Uploading PDF to /api/upload-pdf...');
       const formData = new FormData();
       formData.append('pdf', file);
 
@@ -120,18 +114,25 @@ export default function Home() {
         body: formData,
       });
 
+      console.log('📡 Response status:', response.status);
       const data = await response.json();
+      console.log('📦 Response data:', data);
 
       if (data.success) {
+        console.log('✅ Upload successful!', data);
         setUploadedFiles(prev => [...prev, file.name]);
         setError('');
         setShowUploadModal(false); // Close modal after successful upload
+        // Show success message
+        alert(`Success! Uploaded ${data.chunks_created || 0} chunks from ${file.name}`);
         // Reset file input
         e.target.value = '';
       } else {
+        console.error('❌ Upload failed:', data.error);
         setError(data.error || 'Upload failed');
       }
     } catch (err) {
+      console.error('❌ Upload error:', err);
       setError('Failed to upload PDF');
     } finally {
       setUploadLoading(false);
@@ -139,35 +140,11 @@ export default function Home() {
   };
 
   const handleDeleteFile = async (filename: string) => {
-    if (!confirm(`Are you sure you want to delete ${filename}?`)) {
+    // Only remove from local state - files remain in Cloudflare Vectorize
+    if (!confirm(`Remove ${filename} from the list? (File will remain searchable)`)) {
       return;
     }
-
-    setDeletingFile(filename);
-    setError('');
-
-    try {
-      const response = await fetch('/api/delete-pdf', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ filename }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setUploadedFiles(prev => prev.filter(f => f !== filename));
-        alert(`Successfully deleted ${filename}`);
-      } else {
-        alert(`Error: ${data.error || 'Failed to delete file'}`);
-      }
-    } catch (err) {
-      alert('Error: Failed to delete file');
-    } finally {
-      setDeletingFile(null);
-    }
+    setUploadedFiles(prev => prev.filter(f => f !== filename));
   };
 
   const handleEditQuestion = (messageId: string, currentQuestion: string) => {

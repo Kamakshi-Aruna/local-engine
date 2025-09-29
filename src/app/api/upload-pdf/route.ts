@@ -1,10 +1,15 @@
+// Cloudflare-powered PDF upload API route
 import { NextRequest, NextResponse } from "next/server";
-import { getVectorStore } from "@/lib/vectorStore";
+import { getCloudflareVectorStore } from "@/lib/cloudflareVectorStore";
+import type { DocumentChunk } from "@/lib/cloudflareVectorStore";
 
 export async function POST(request: NextRequest) {
+  console.log('🔵 /api/upload-pdf endpoint called');
+
   try {
     const formData = await request.formData();
     const file = formData.get('pdf') as File;
+    console.log('📄 Received file:', file?.name, 'Size:', file?.size);
 
     if (!file) {
       return NextResponse.json(
@@ -33,8 +38,6 @@ export async function POST(request: NextRequest) {
       textContent = data.text;
     } catch (pdfError) {
       console.log("PDF parsing failed, trying alternative method:", pdfError);
-
-      // Fallback: treat as text or return an error
       return NextResponse.json(
         { error: "Could not extract text from PDF. Please ensure it's a text-based PDF." },
         { status: 400 }
@@ -49,82 +52,34 @@ export async function POST(request: NextRequest) {
     }
 
     // Split text into chunks (roughly 500 characters each)
-    const chunks = splitIntoChunks(textContent, 500);
+    const textChunks = splitIntoChunks(textContent, 500);
 
-    // Generate embeddings and store in Qdrant
-    const { client, collectionName } = await getVectorStore();
+    // Create document chunks with proper IDs
+    const chunks: DocumentChunk[] = textChunks.map((text, index) => ({
+      id: `${file.name}-chunk-${index}-${Date.now()}`,
+      text,
+      source: file.name,
+      chunk_index: index,
+    }));
 
-    // Ensure collection exists, create if it doesn't
-    try {
-      await client.getCollection(collectionName);
-    } catch (error) {
-      // Collection doesn't exist, create it
-      console.log(`Creating collection: ${collectionName}`);
-      await client.createCollection(collectionName, {
-        vectors: {
-          size: 4096, // Ollama embedding dimension
-          distance: "Cosine",
+    // Get Cloudflare vector store and upload chunks
+    const vectorStore = await getCloudflareVectorStore();
+    const result = await vectorStore.uploadChunks(chunks);
+
+    if (!result.success) {
+      return NextResponse.json(
+        {
+          error: "Failed to upload to Cloudflare",
+          details: result.message
         },
-      });
-      console.log(`✅ Created collection: ${collectionName}`);
-    }
-
-    // Get current collection info to determine next ID
-    let startId = 1000 + Math.floor(Math.random() * 10000); // Random ID to avoid conflicts
-
-    const points: any[] = [];
-
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-
-      // Generate embedding for this chunk
-      const embeddingResponse = await fetch("http://localhost:11434/api/embeddings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: process.env.OLLAMA_MODEL || "llama3",
-          prompt: chunk,
-        }),
-      });
-
-      if (!embeddingResponse.ok) {
-        throw new Error(`Failed to generate embedding for chunk ${i}`);
-      }
-
-      const embeddingData = await embeddingResponse.json();
-      const embedding = embeddingData.embedding;
-
-      if (embedding && embedding.length > 0) {
-        const point = {
-          id: startId + i,
-          vector: embedding,
-          payload: {
-            text: chunk,
-            source: file.name,
-            type: "pdf",
-            chunk_index: i,
-            total_chunks: chunks.length,
-          }
-        };
-
-        // Debug logging
-        console.log(`Creating PDF point ${startId + i} for file: ${file.name}`);
-        points.push(point);
-      }
-    }
-
-    // Upload all points to Qdrant
-    if (points.length > 0) {
-      await client.upsert(collectionName, {
-        wait: true,
-        points: points,
-      });
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
       success: true,
       message: `Successfully processed ${file.name}`,
-      chunks_created: points.length,
+      chunks_created: result.chunks_processed || chunks.length,
       filename: file.name,
     });
 

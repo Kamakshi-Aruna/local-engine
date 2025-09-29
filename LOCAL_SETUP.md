@@ -1,29 +1,23 @@
-# Local Search Engine Setup
+# Cloudflare Search Engine Setup
 
-A completely local RAG (Retrieval-Augmented Generation) search engine using:
-- **Ollama** (Local LLM)
-- **Qdrant** (Local Vector Database)
-- **LlamaIndex** (Document Processing)
+A cloud-powered RAG (Retrieval-Augmented Generation) search engine using:
+- **Cloudflare AI Workers** (Cloud LLM)
+- **Cloudflare Vectorize** (Cloud Vector Database)
 - **Next.js** (Web Interface)
 
 ## Prerequisites
 
-### 1. Install Ollama
+### 1. Cloudflare Account
+- Sign up at [cloudflare.com](https://cloudflare.com)
+- Get your Account ID and API Token
+
+### 2. Install Wrangler CLI
 ```bash
-# macOS
-brew install ollama
+# Install Wrangler globally
+npm install -g wrangler
 
-# Start Ollama service
-ollama serve
-
-# Pull the required model
-ollama pull llama3
-```
-
-### 2. Install Docker (for Qdrant)
-```bash
-# Install Docker Desktop or use brew
-brew install docker
+# Login to Cloudflare
+wrangler login
 ```
 
 ## Setup Instructions
@@ -34,36 +28,28 @@ cd local-engine
 npm install
 ```
 
-### 2. Start Local Qdrant Vector Database
+### 2. Create Cloudflare Vectorize Index
 ```bash
-# Start Qdrant in Docker
-docker run -p 6333:6333 -p 6334:6334 \
-  -v $(pwd)/qdrant_storage:/qdrant/storage \
-  qdrant/qdrant
+# Create vector database
+npm run create-vectorize
 ```
 
-### 3. Verify Services are Running
+### 3. Deploy Cloudflare Worker
 ```bash
-# Check Ollama
-curl http://localhost:11434/api/tags
-
-# Check Qdrant
-curl http://localhost:6333/collections
+# Deploy AI worker to Cloudflare
+npm run deploy-worker
 ```
 
-### 4. Add PDF Documents
-```bash
-# Put your PDF files in the data directory
-cp your-documents.pdf ./data/
+### 4. Configure Environment
+Update `.env.local` with your Cloudflare credentials:
+```env
+CLOUDFLARE_ACCOUNT_ID=your-account-id
+CLOUDFLARE_API_TOKEN=your-api-token
+CLOUDFLARE_WORKER_URL=https://your-worker.workers.dev
+VECTORIZE_INDEX_NAME=pdf-search-index
 ```
 
-### 5. Ingest Documents
-```bash
-# Run the ingestion script
-npm run ingest
-```
-
-### 6. Start the Web Application
+### 5. Start the Web Application
 ```bash
 # Start Next.js application
 npm run dev
@@ -91,67 +77,64 @@ Open `http://localhost:3000` in your browser for the web interface.
 
 All configuration is in `.env.local`:
 ```env
-# Ollama Configuration (local)
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3
-
-# Qdrant Local Configuration
-QDRANT_URL=http://localhost:6333
-QDRANT_COLLECTION=pdf_documents
+# Cloudflare Configuration
+CLOUDFLARE_ACCOUNT_ID=your-account-id
+CLOUDFLARE_API_TOKEN=your-api-token
+CLOUDFLARE_WORKER_URL=https://your-worker.workers.dev
+VECTORIZE_INDEX_NAME=pdf-search-index
 ```
 
 ## Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Next.js App   │───▶│   Ollama LLM    │    │   Qdrant DB     │
-│  (localhost:3000)│    │ (localhost:11434)│    │ (localhost:6333)│
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         │                       ▼                       │
-         │              Generate Embeddings              │
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 ▼
-                        Store/Search Vectors
+┌─────────────────┐    ┌─────────────────────────────────┐
+│   Next.js App   │───▶│        Cloudflare Edge          │
+│  (localhost:3000)│    │  ┌─────────────┐ ┌─────────────┐ │
+└─────────────────┘    │  │ AI Workers  │ │ Vectorize   │ │
+                       │  │     LLM     │ │ Vector DB   │ │
+                       │  └─────────────┘ └─────────────┘ │
+                       └─────────────────────────────────┘
 ```
 
 ## Troubleshooting
 
-### Ollama Issues
+### Worker Issues
 ```bash
-# Restart Ollama
-pkill ollama
-ollama serve
+# Check worker status
+wrangler deployments list
 
-# Check model availability
-ollama list
+# View worker logs
+wrangler tail
+
+# Re-deploy worker
+npm run deploy-worker
 ```
 
-### Qdrant Issues
+### Vectorize Issues
 ```bash
-# Restart Qdrant container
-docker ps  # find container ID
-docker restart <container_id>
+# Check vectorize status
+wrangler vectorize get pdf-search-index
 
-# Check Qdrant dashboard
-open http://localhost:6333/dashboard
+# Re-create index if needed
+wrangler vectorize delete pdf-search-index
+npm run create-vectorize
 ```
 
-### Port Conflicts
-- Ollama: Default port 11434
-- Qdrant: Default ports 6333, 6334
-- Next.js: Default port 3000
+### Environment Issues
+- Ensure all environment variables are set correctly
+- Worker URL should end with `.workers.dev`
+- Account ID and API Token must be valid
 
 ## Features
 
-- ✅ 100% Local - No external API calls
+- ✅ Global CDN - Responses from 300+ locations worldwide
 - ✅ PDF Document Ingestion
-- ✅ Semantic Search
-- ✅ Vector Storage with Qdrant
-- ✅ LLM-powered Responses with Ollama
+- ✅ Semantic Search with AI
+- ✅ Vector Storage with Cloudflare Vectorize
+- ✅ LLM-powered Responses with Cloudflare AI
 - ✅ Web Interface with Next.js
 - ✅ TypeScript Support
+- ✅ Zero maintenance - No local services
 
 ## File Structure
 
@@ -159,13 +142,11 @@ open http://localhost:6333/dashboard
 local-engine/
 ├── src/
 │   ├── app/api/
-│   │   ├── search/route.ts      # Search API endpoint
-│   │   └── upload-pdf/route.ts  # PDF upload endpoint
-│   └── lib/
-│       └── vectorStore.ts       # Qdrant client configuration
-├── scripts/
-│   └── ingest.ts               # Bulk PDF ingestion script
-├── data/                       # PDF documents directory
-├── qdrant_storage/            # Qdrant data persistence
-└── .env.local                 # Local configuration
+│   │   ├── search/route.ts      # Cloudflare search API
+│   │   └── upload-pdf/route.ts  # Cloudflare upload API
+│   ├── lib/
+│   │   └── cloudflareVectorStore.ts  # Vectorize client
+│   └── worker.ts               # Cloudflare Worker
+├── wrangler.toml               # Worker configuration
+└── .env.local                  # Cloudflare configuration
 ```
