@@ -7,7 +7,7 @@ NODE_ENV = "production"
 
 [[vectorize]]
 binding = "VECTORIZE_INDEX"
-index_name = "cloud-engine-demo"
+index_name = "cloud-engine-test"
 
 [ai]
 binding = "AI"
