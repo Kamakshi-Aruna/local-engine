@@ -79,19 +79,6 @@ export async function POST(request: NextRequest) {
       const toolAnswers = toolResults.map(tr => {
         const data = tr.result.data;
         switch (tr.tool) {
-          case 'get_weather':
-            return `Current weather in ${data.location}: ${data.temperature}${data.units.temperature}, ${data.description}. Humidity: ${data.humidity}%, Wind: ${data.wind_speed} ${data.units.wind_speed}.`;
-
-          case 'get_news':
-            const articles = data.articles.slice(0, 3);
-            return `Latest news: ${articles.map((a: any) => `• ${a.title} (${a.source})`).join(' ')}`;
-
-          case 'get_stock_price':
-            return `${data.symbol}: $${data.price} (${data.change > 0 ? '+' : ''}${data.change.toFixed(2)}, ${data.changePercent}) as of ${data.lastTradingDay}`;
-
-          case 'get_time':
-            return `Current time: ${data.time} (${data.timezone})`;
-
           case 'calculate':
             return `${data.expression} = ${data.result}`;
 

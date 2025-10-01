@@ -1,10 +1,6 @@
 // Tool registry initialization and exports
 
 import { ToolRegistry } from './registry';
-import { WeatherTool } from './implementations/weather';
-import { NewsTool } from './implementations/news';
-import { StockTool } from './implementations/stocks';
-import { TimeTool } from './implementations/time';
 import { CalculatorTool } from './implementations/calculator';
 
 // Initialize and configure the tool registry
@@ -12,10 +8,6 @@ export function initializeTools(): ToolRegistry {
   const registry = ToolRegistry.getInstance();
 
   // Register all available tools
-  registry.registerTool(new WeatherTool());
-  registry.registerTool(new NewsTool());
-  registry.registerTool(new StockTool());
-  registry.registerTool(new TimeTool());
   registry.registerTool(new CalculatorTool());
 
   return registry;
@@ -24,19 +16,11 @@ export function initializeTools(): ToolRegistry {
 // Export types and classes for external use
 export * from './types';
 export * from './registry';
-export { WeatherTool } from './implementations/weather';
-export { NewsTool } from './implementations/news';
-export { StockTool } from './implementations/stocks';
-export { TimeTool } from './implementations/time';
 export { CalculatorTool } from './implementations/calculator';
 
 // Utility functions for tool detection and suggestion
 export function detectToolsFromQuery(query: string): string[] {
   const toolKeywords = {
-    weather: ['weather', 'temperature', 'rain', 'snow', 'forecast', 'climate', 'humidity', 'wind'],
-    news: ['news', 'headlines', 'breaking', 'latest', 'article', 'report', 'update'],
-    stocks: ['stock', 'share', 'price', 'market', 'trading', 'nasdaq', 'nyse', 'equity'],
-    time: ['time', 'clock', 'date', 'timezone', 'hour', 'minute', 'when', 'now'],
     calculator: ['calculate', 'math', 'add', 'subtract', 'multiply', 'divide', 'equation', '+', '-', '*', '/', '=']
   };
 
@@ -56,45 +40,6 @@ export function getToolSuggestions(query: string): { tool: string; confidence: n
   const suggestions: { tool: string; confidence: number; suggested_params?: Record<string, any> }[] = [];
   const queryLower = query.toLowerCase();
 
-  // Weather detection
-  if (/weather|temperature|forecast/.test(queryLower)) {
-    const locationMatch = queryLower.match(/(?:in|for|at)\s+([a-z\s,]+)/i);
-    suggestions.push({
-      tool: 'get_weather',
-      confidence: 0.9,
-      suggested_params: locationMatch ? { location: locationMatch[1].trim() } : {}
-    });
-  }
-
-  // News detection
-  if (/news|headlines|breaking/.test(queryLower)) {
-    const topicMatch = queryLower.match(/news\s+(?:about|on|regarding)\s+([a-z\s]+)/i);
-    suggestions.push({
-      tool: 'get_news',
-      confidence: 0.8,
-      suggested_params: topicMatch ? { query: topicMatch[1].trim() } : {}
-    });
-  }
-
-  // Stock detection
-  const stockMatch = queryLower.match(/(?:stock|share|price)\s+(?:of\s+)?([a-z]{1,5})/i);
-  if (stockMatch || /nasdaq|nyse|trading/.test(queryLower)) {
-    suggestions.push({
-      tool: 'get_stock_price',
-      confidence: stockMatch ? 0.9 : 0.7,
-      suggested_params: stockMatch ? { symbol: stockMatch[1].toUpperCase() } : {}
-    });
-  }
-
-  // Time detection
-  if (/time|clock|timezone/.test(queryLower)) {
-    const timezoneMatch = queryLower.match(/time\s+in\s+([a-z\s/]+)/i);
-    suggestions.push({
-      tool: 'get_time',
-      confidence: 0.8,
-      suggested_params: timezoneMatch ? { timezone: timezoneMatch[1].trim() } : {}
-    });
-  }
 
   // Math detection - improved pattern to catch expressions and mathematical functions
   const mathMatch = queryLower.match(/calculate|compute|math|value of|what is|square root|sqrt|[\d]+[\s]*[\+\-\*/\^][\s]*[\d]+/);
@@ -108,13 +53,23 @@ export function getToolSuggestions(query: string): { tool: string; confidence: n
         suggested_params: { expression: `sqrt(${sqrtMatch[1]})` }
       });
     } else {
-      // Try to extract mathematical expression - improved regex
-      const exprMatch = query.match(/[\d]+[\s]*[\+\-\*/\^().\s√π]+[\d]+/);
-      suggestions.push({
-        tool: 'calculate',
-        confidence: 0.9,
-        suggested_params: exprMatch ? { expression: exprMatch[0].trim() } : {}
-      });
+      // Try to extract mathematical expression - improved regex to capture full expressions
+      // This pattern matches: number (operator number)* to capture chains like 100+89-7
+      const exprMatch = query.match(/[\d.]+(?:[\s]*[\+\-\*/\^][\s]*[\d.]+)+/g);
+      if (exprMatch) {
+        suggestions.push({
+          tool: 'calculate',
+          confidence: 0.9,
+          suggested_params: { expression: exprMatch[0].trim() }
+        });
+      } else {
+        // Fallback: if no expression found but math keywords detected
+        suggestions.push({
+          tool: 'calculate',
+          confidence: 0.7,
+          suggested_params: {}
+        });
+      }
     }
   }
 
