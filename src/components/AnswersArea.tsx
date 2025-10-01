@@ -3,6 +3,8 @@ interface Message {
   question: string;
   answer: string;
   timestamp: Date;
+  hasToolResults?: boolean;
+  hasPdfResults?: boolean;
 }
 
 interface AnswersAreaProps {
@@ -78,9 +80,25 @@ export default function AnswersArea({
                               </svg>
                             </button>
                           </div>
-                          <p className="text-sm text-gray-400">
-                            Asked at {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
+                          <div className="flex items-center gap-4 text-sm text-gray-400">
+                            <span>Asked at {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            {message.hasToolResults && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-600/20 text-green-400 rounded-md text-xs">
+                                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                Live Data
+                              </span>
+                            )}
+                            {message.hasPdfResults && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-600/20 text-blue-400 rounded-md text-xs">
+                                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Documents
+                              </span>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>

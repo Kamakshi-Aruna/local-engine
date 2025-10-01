@@ -11,6 +11,8 @@ interface Message {
   question: string;
   answer: string;
   timestamp: Date;
+  hasToolResults?: boolean;
+  hasPdfResults?: boolean;
 }
 
 export default function Home() {
@@ -58,10 +60,15 @@ export default function Home() {
       const data = await response.json();
 
       if (data.success) {
-        // Update the message with the answer
+        // Update the message with the answer and metadata
         setMessages(prev => prev.map(msg =>
           msg.id === newMessageId
-            ? { ...msg, answer: data.answer }
+            ? {
+                ...msg,
+                answer: data.answer,
+                hasToolResults: data.hasToolResults,
+                hasPdfResults: data.hasPdfResults
+              }
             : msg
         ));
       } else {
@@ -184,10 +191,15 @@ export default function Home() {
       const data = await response.json();
 
       if (data.success) {
-        // Update the message with the new answer
+        // Update the message with the new answer and metadata
         setMessages(prev => prev.map(msg =>
           msg.id === messageId
-            ? { ...msg, answer: data.answer }
+            ? {
+                ...msg,
+                answer: data.answer,
+                hasToolResults: data.hasToolResults,
+                hasPdfResults: data.hasPdfResults
+              }
             : msg
         ));
       } else {
