@@ -96,16 +96,26 @@ export function getToolSuggestions(query: string): { tool: string; confidence: n
     });
   }
 
-  // Math detection - improved pattern to catch expressions like "90+10" or "value of 90+10"
-  const mathMatch = queryLower.match(/calculate|compute|math|value of|what is|[\d]+[\s]*[\+\-\*/\^][\s]*[\d]+/);
+  // Math detection - improved pattern to catch expressions and mathematical functions
+  const mathMatch = queryLower.match(/calculate|compute|math|value of|what is|square root|sqrt|[\d]+[\s]*[\+\-\*/\^][\s]*[\d]+/);
   if (mathMatch) {
-    // Try to extract mathematical expression - improved regex
-    const exprMatch = query.match(/[\d]+[\s]*[\+\-\*/\^().\s√π]+[\d]+/);
-    suggestions.push({
-      tool: 'calculate',
-      confidence: 0.9,
-      suggested_params: exprMatch ? { expression: exprMatch[0].trim() } : {}
-    });
+    // Handle square root specifically
+    const sqrtMatch = query.match(/(?:square root|sqrt)\s*(?:of\s*)?([\d.]+)/i);
+    if (sqrtMatch) {
+      suggestions.push({
+        tool: 'calculate',
+        confidence: 0.95,
+        suggested_params: { expression: `sqrt(${sqrtMatch[1]})` }
+      });
+    } else {
+      // Try to extract mathematical expression - improved regex
+      const exprMatch = query.match(/[\d]+[\s]*[\+\-\*/\^().\s√π]+[\d]+/);
+      suggestions.push({
+        tool: 'calculate',
+        confidence: 0.9,
+        suggested_params: exprMatch ? { expression: exprMatch[0].trim() } : {}
+      });
+    }
   }
 
   return suggestions.sort((a, b) => b.confidence - a.confidence);

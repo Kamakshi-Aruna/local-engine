@@ -49,12 +49,19 @@ export default function Home() {
     setQuery(''); // Clear input immediately
 
     try {
+      // Detect if this is a pure math query
+      const isMathQuery = /^[\d\s\+\-\*\/\^\(\)\.]+$|square root|sqrt|calculate|compute|math|value of|what is/i.test(userQuestion);
+
       const response = await fetch('/api/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: userQuestion }),
+        body: JSON.stringify({
+          query: userQuestion,
+          useTools: true,
+          usePdfSearch: !isMathQuery // Skip PDF search for pure math queries
+        }),
       });
 
       const data = await response.json();

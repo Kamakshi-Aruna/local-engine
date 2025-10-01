@@ -9,7 +9,7 @@ const toolRegistry = initializeTools();
 
 export async function POST(request: NextRequest) {
   try {
-    const { query, useTools = true } = await request.json();
+    const { query, useTools = true, usePdfSearch = true } = await request.json();
 
     if (!query) {
       return NextResponse.json(
@@ -22,12 +22,14 @@ export async function POST(request: NextRequest) {
     let toolResults: any[] | null = null;
     let combinedAnswer = "";
 
-    // Always try PDF search first if vector store is configured
-    try {
-      const vectorStore = await getCloudflareVectorStore();
-      pdfResults = await vectorStore.search(query, 3);
-    } catch (vectorError) {
-      console.log("📄 Vector search not available:", vectorError);
+    // Only search PDFs if enabled and vector store is configured
+    if (usePdfSearch) {
+      try {
+        const vectorStore = await getCloudflareVectorStore();
+        pdfResults = await vectorStore.search(query, 3);
+      } catch (vectorError) {
+        console.log("📄 Vector search not available:", vectorError);
+      }
     }
 
     // Detect and execute tools if enabled
