@@ -128,6 +128,10 @@ async function handleSearch(
 
   try {
     // Generate embedding for the query using Cloudflare AI
+    // The BGE model already understands semantic similarity
+    // e.g., "mobile developer" will match documents with "iOS", "Android" etc.
+    console.log('🔍 Query:', query);
+
     const embeddings = await env.AI.run('@cf/baai/bge-base-en-v1.5', {
       text: query,
     });
@@ -147,8 +151,10 @@ async function handleSearch(
       toolResults = await executeToolCalls(toolCalls, env);
     }
 
+    // Increase topK for better recall, then we'll re-rank
+    const searchLimit = Math.max(limit * 3, 10);
     const vectorQuery = await env.VECTORIZE_INDEX.query(queryVector, {
-      topK: limit,
+      topK: searchLimit,
       returnVectors: false,
       returnMetadata: true,
     });
@@ -204,7 +210,7 @@ async function handleSearch(
       );
     }
 
-    // Extract relevant text chunks
+    // Extract and enhance relevant text chunks with score details
     const sources = vectorQuery.matches.map((match) => ({
       text: match.metadata?.text as string || '',
       source: match.metadata?.source as string || 'unknown',
@@ -212,25 +218,28 @@ async function handleSearch(
       score: match.score || 0,
     })).filter((item) => item.text.length > 0);
 
-    const relevantTexts = sources.map((s) => s.text).join('\n\n');
+    // Sort by score and take top results
+    sources.sort((a, b) => b.score - a.score);
+    const topSources = sources.slice(0, limit);
 
-    // Debug logging
+    const relevantTexts = topSources.map((s) => s.text).join('\n\n');
+
+    // Enhanced debug logging with similarity scores
     console.log('🔍 Query:', query);
     console.log('📊 Matches found:', vectorQuery.matches.length);
-    console.log('📝 Sources:', sources.length);
+    console.log('🎯 Top scores:', topSources.map(s => `${s.source}: ${s.score.toFixed(3)}`).join(', '));
+    console.log('📝 Sources returned:', topSources.length);
     console.log('📄 Context length:', relevantTexts.length);
     console.log('🔤 First 200 chars of context:', relevantTexts.substring(0, 200));
 
     // Generate response using Cloudflare AI with tool call support
-    const systemPrompt = `You are a helpful assistant that can:
-1. Answer questions based on the provided context from uploaded documents
-2. Use real-time data from tool calls when available
-3. Fetch current information from external APIs
+    const systemPrompt = `You are a helpful assistant. Answer questions based ONLY on the provided context from uploaded documents.
 
-Available tools:
-- fetch_weather: For current weather information
-
-If you need real-time data that isn't in the context, mention what tool would be helpful.`;
+Important:
+- If information is not in the context, simply say you don't have that information
+- Do NOT suggest using other tools, APIs, or external data sources
+- Do NOT mention GitHub, Stack Overflow, or any other external services
+- Only answer based on what's in the provided documents`;
 
     let prompt = `Context from documents:
 ${relevantTexts}
