@@ -1,8 +1,35 @@
 // Cloudflare Worker for AI-powered document search
 
+// Type definitions for Cloudflare Workers
+declare global {
+  interface VectorizeVector {
+    id: string;
+    values: number[];
+    metadata?: Record<string, any>;
+  }
+
+  interface VectorizeQueryResult {
+    matches: Array<{
+      id: string;
+      score: number;
+      metadata?: Record<string, any>;
+    }>;
+  }
+
+  interface VectorizeIndex {
+    query(vector: number[], options?: { topK?: number; returnVectors?: boolean; returnMetadata?: boolean }): Promise<VectorizeQueryResult>;
+    upsert(vectors: VectorizeVector[]): Promise<void>;
+  }
+
+  interface Ai {
+    run(model: string, input: any): Promise<any>;
+  }
+}
+
 export interface Env {
   VECTORIZE_INDEX: VectorizeIndex;
   AI: Ai;
+  OPENWEATHER_API_KEY: string;
 }
 
 interface DocumentChunk {
@@ -26,6 +53,17 @@ interface SearchResponse {
     chunk: number;
     score: number;
     preview: string;
+  }>;
+  tool_calls?: Array<{
+    id: string;
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }>;
+  tool_results?: Array<{
+    tool_call_id: string;
+    result: any;
   }>;
   error?: string;
 }
@@ -100,13 +138,61 @@ async function handleSearch(
 
     // Search in Vectorize
     const queryVector = embeddings.data[0];
+    // Check if query requires tool calling for real-time data (do this early)
+    const toolCalls = detectToolCalls(query);
+    let toolResults: any[] = [];
+
+    // Execute tool calls if detected
+    if (toolCalls.length > 0) {
+      toolResults = await executeToolCalls(toolCalls, env);
+    }
+
     const vectorQuery = await env.VECTORIZE_INDEX.query(queryVector, {
       topK: limit,
       returnVectors: false,
       returnMetadata: true,
     });
 
+    // Handle case where no documents found
     if (!vectorQuery.matches || vectorQuery.matches.length === 0) {
+      if (toolResults.length > 0) {
+        // Generate AI response using only tool results
+        const systemPrompt = `You are a helpful assistant that provides real-time information using tools. Answer the user's question using only the tool results provided.`;
+
+        const toolResultsText = toolResults.map(tr =>
+          `Tool: ${tr.tool_call_id}\nResult: ${JSON.stringify(tr.result, null, 2)}`
+        ).join('\n\n');
+
+        const prompt = `Question: ${query}\n\nReal-time data from tools:\n${toolResultsText}\n\nAnswer:`;
+
+        const aiResponse = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt,
+            },
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+        });
+
+        const answer = aiResponse.response || 'I could not generate a response.';
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            answer: answer,
+            query: query,
+            sources: [],
+            tool_calls: toolCalls,
+            tool_results: toolResults,
+          } as SearchResponse),
+          { headers: corsHeaders }
+        );
+      }
+
       return new Response(
         JSON.stringify({
           success: true,
@@ -135,21 +221,37 @@ async function handleSearch(
     console.log('📄 Context length:', relevantTexts.length);
     console.log('🔤 First 200 chars of context:', relevantTexts.substring(0, 200));
 
-    // Generate response using Cloudflare AI
-    const prompt = `Based on the following context, please answer the question. Use ONLY the information provided in the context. If the answer is not in the context, say "I cannot find this information in the uploaded documents."
+    // Generate response using Cloudflare AI with tool call support
+    const systemPrompt = `You are a helpful assistant that can:
+1. Answer questions based on the provided context from uploaded documents
+2. Use real-time data from tool calls when available
+3. Fetch current information from external APIs
 
-Context:
+Available tools:
+- fetch_weather: For current weather information
+
+If you need real-time data that isn't in the context, mention what tool would be helpful.`;
+
+    let prompt = `Context from documents:
 ${relevantTexts}
 
-Question: ${query}
+Question: ${query}`;
 
-Answer:`;
+    if (toolResults.length > 0) {
+      const toolResultsText = toolResults.map(tr =>
+        `Tool: ${tr.tool_call_id}\nResult: ${JSON.stringify(tr.result, null, 2)}`
+      ).join('\n\n');
+      prompt += `\n\nReal-time data from tools:
+${toolResultsText}`;
+    }
+
+    prompt += '\n\nAnswer:';
 
     const aiResponse = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful assistant that answers questions based ONLY on the provided context. Do not use external knowledge. If the answer is not in the context, clearly state that.',
+          content: systemPrompt,
         },
         {
           role: 'user',
@@ -170,6 +272,8 @@ Answer:`;
         score: s.score,
         preview: s.text.substring(0, 100) + '...',
       })),
+      tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
+      tool_results: toolResults.length > 0 ? toolResults : undefined,
     };
 
     return new Response(JSON.stringify(response), { headers: corsHeaders });
@@ -262,3 +366,130 @@ async function handleUpload(
     );
   }
 }
+
+function detectToolCalls(query: string): Array<{
+  id: string;
+  function: {
+    name: string;
+    arguments: string;
+  };
+}> {
+  const toolCalls = [];
+  const lowercaseQuery = query.toLowerCase();
+
+
+  // Detect weather requests
+  if (lowercaseQuery.includes('weather') || lowercaseQuery.includes('weater') ||
+      lowercaseQuery.includes('temperature') || lowercaseQuery.includes('forecast')) {
+
+    // Simple approach: remove common weather-related words and extract the city
+    let city = query
+      .replace(/current/gi, '')
+      .replace(/weather/gi, '')
+      .replace(/weater/gi, '')
+      .replace(/temperature/gi, '')
+      .replace(/forecast/gi, '')
+      .replace(/in/gi, '')
+      .replace(/for/gi, '')
+      .replace(/at/gi, '')
+      .replace(/the/gi, '')
+      .trim();
+
+    // If no city found, default to New York
+    if (!city) {
+      city = 'New York';
+    }
+
+    toolCalls.push({
+      id: `weather_${Date.now()}`,
+      function: {
+        name: 'fetch_weather',
+        arguments: JSON.stringify({ city })
+      }
+    });
+  }
+
+
+  return toolCalls;
+}
+
+async function executeToolCalls(toolCalls: Array<{
+  id: string;
+  function: {
+    name: string;
+    arguments: string;
+  };
+}>, env: Env): Promise<Array<{
+  tool_call_id: string;
+  result: any;
+}>> {
+  const results = [];
+
+  for (const toolCall of toolCalls) {
+    try {
+      const args = JSON.parse(toolCall.function.arguments);
+      let result;
+
+      switch (toolCall.function.name) {
+        case 'fetch_weather':
+          result = await handleWeatherFetch(args, env);
+          break;
+        default:
+          result = { error: `Unknown tool: ${toolCall.function.name}` };
+      }
+
+      results.push({
+        tool_call_id: toolCall.id,
+        result: result
+      });
+    } catch (error) {
+      results.push({
+        tool_call_id: toolCall.id,
+        result: { error: `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}` }
+      });
+    }
+  }
+
+  return results;
+}
+
+async function handleWeatherFetch(args: { city?: string }, env: Env) {
+  try {
+    const apiKey = env.OPENWEATHER_API_KEY;
+
+    if (!apiKey) {
+      return { error: "OpenWeather API key not configured. Real weather data unavailable." };
+    }
+
+    const city = args.city || 'New York';
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Weather API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    const weatherData = {
+      location: data.name + (data.sys?.country ? `, ${data.sys.country}` : ''),
+      temperature: Math.round(data.main.temp),
+      condition: data.weather[0]?.description || 'unknown',
+      humidity: data.main.humidity,
+      wind_speed: Math.round(data.wind?.speed * 3.6), // Convert m/s to km/h
+      timestamp: new Date().toISOString(),
+      sunrise: new Date(data.sys.sunrise * 1000).toISOString(),
+      sunset: new Date(data.sys.sunset * 1000).toISOString(),
+      pressure: data.main.pressure,
+      visibility: data.visibility ? Math.round(data.visibility / 1000) : null
+    };
+
+    return {
+      weather: weatherData,
+      source: "openweather_api"
+    };
+  } catch (error) {
+    return { error: `Weather fetch failed: ${error instanceof Error ? error.message : 'Unknown error'}` };
+  }
+}
+

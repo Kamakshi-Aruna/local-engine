@@ -3,6 +3,17 @@ interface Message {
   question: string;
   answer: string;
   timestamp: Date;
+  tool_calls?: Array<{
+    id: string;
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }>;
+  tool_results?: Array<{
+    tool_call_id: string;
+    result: any;
+  }>;
 }
 
 interface AnswersAreaProps {
@@ -13,6 +24,94 @@ interface AnswersAreaProps {
   onEditQuestion?: (messageId: string, currentQuestion: string) => void;
   onSaveEdit?: (messageId: string) => void;
   onCancelEdit?: () => void;
+}
+
+function renderToolResult(result: any, toolName: string) {
+  if (result.error) {
+    return (
+      <div className="text-red-400">
+        <strong>Error:</strong> {result.error}
+      </div>
+    );
+  }
+
+  switch (toolName) {
+    case 'calculate':
+      return (
+        <div>
+          <strong>Calculation:</strong> {result.expression} = <span className="text-green-400">{result.result}</span>
+        </div>
+      );
+
+    case 'fetch_weather':
+      if (result.weather) {
+        return (
+          <div>
+            <strong>Weather in {result.weather.location}:</strong>
+            <div className="mt-1 grid grid-cols-2 gap-2 text-xs">
+              <div>🌡️ {result.weather.temperature}°C</div>
+              <div>🌤️ {result.weather.condition}</div>
+              <div>💧 {result.weather.humidity}% humidity</div>
+              <div>💨 {result.weather.wind_speed} km/h</div>
+            </div>
+          </div>
+        );
+      }
+      break;
+
+    case 'fetch_stock_price':
+      if (result.stock) {
+        const isPositive = result.stock.change >= 0;
+        return (
+          <div>
+            <strong>{result.stock.symbol} Stock Price:</strong>
+            <div className="mt-1 text-xs">
+              <div className="text-green-400 font-bold text-lg">${result.stock.price}</div>
+              <div className={isPositive ? 'text-green-400' : 'text-red-400'}>
+                {isPositive ? '↗️' : '↘️'} {result.stock.change} ({result.stock.change_percent}%)
+              </div>
+              <div>Volume: {result.stock.volume?.toLocaleString()}</div>
+            </div>
+          </div>
+        );
+      }
+      break;
+
+    case 'get_current_time':
+      return (
+        <div>
+          <strong>Current Time ({result.timezone}):</strong>
+          <div className="mt-1 text-xs">
+            <div>🕐 {result.formatted}</div>
+            <div>Unix: {result.unix_timestamp}</div>
+          </div>
+        </div>
+      );
+
+    case 'currency_convert':
+      return (
+        <div>
+          <strong>Currency Conversion:</strong>
+          <div className="mt-1 text-xs">
+            <div>{result.original_amount} {result.from_currency} = <span className="text-green-400">{result.converted_amount} {result.to_currency}</span></div>
+            <div>Exchange Rate: {result.exchange_rate}</div>
+          </div>
+        </div>
+      );
+
+    default:
+      return (
+        <pre className="text-xs overflow-x-auto whitespace-pre-wrap">
+          {JSON.stringify(result, null, 2)}
+        </pre>
+      );
+  }
+
+  return (
+    <pre className="text-xs overflow-x-auto whitespace-pre-wrap">
+      {JSON.stringify(result, null, 2)}
+    </pre>
+  );
 }
 
 export default function AnswersArea({
@@ -105,6 +204,37 @@ export default function AnswersArea({
                     </div>
                   )}
                 </div>
+
+                {/* Tool Calling Results */}
+                {message.tool_results && message.tool_results.length > 0 && (
+                  <div className="bg-blue-900/20 rounded-xl p-4 border border-blue-500/30">
+                    <div className="flex items-center gap-2 mb-3">
+                      <svg className="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      <h3 className="text-sm font-semibold text-blue-300">Real-time Data Used</h3>
+                    </div>
+                    <div className="space-y-3">
+                      {message.tool_results.map((toolResult, toolIndex) => {
+                        const toolCall = message.tool_calls?.find(tc => tc.id === toolResult.tool_call_id);
+                        const toolName = toolCall?.function.name || 'Unknown Tool';
+
+                        return (
+                          <div key={toolIndex} className="bg-gray-800/50 rounded-lg p-3 border border-gray-600">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full font-medium">
+                                {toolName.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </span>
+                            </div>
+                            <div className="text-sm text-gray-300">
+                              {renderToolResult(toolResult.result, toolName)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

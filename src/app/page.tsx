@@ -11,6 +11,17 @@ interface Message {
   question: string;
   answer: string;
   timestamp: Date;
+  tool_calls?: Array<{
+    id: string;
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }>;
+  tool_results?: Array<{
+    tool_call_id: string;
+    result: any;
+  }>;
 }
 
 export default function Home() {
@@ -58,10 +69,15 @@ export default function Home() {
       const data = await response.json();
 
       if (data.success) {
-        // Update the message with the answer
+        // Update the message with the answer and tool calling data
         setMessages(prev => prev.map(msg =>
           msg.id === newMessageId
-            ? { ...msg, answer: data.answer }
+            ? {
+                ...msg,
+                answer: data.answer,
+                tool_calls: data.tool_calls,
+                tool_results: data.tool_results
+              }
             : msg
         ));
       } else {

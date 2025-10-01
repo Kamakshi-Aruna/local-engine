@@ -28,6 +28,17 @@ export interface CloudflareSearchResponse {
   answer?: string;
   query: string;
   sources?: SearchResult[];
+  tool_calls?: Array<{
+    id: string;
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }>;
+  tool_results?: Array<{
+    tool_call_id: string;
+    result: any;
+  }>;
   error?: string;
 }
 
