@@ -1,0 +1,32 @@
+HANS MUELLER
+Software-Entwickler
+
+KONTAKT
+E-Mail: hans.mueller@email.com
+Telefon: +49-30-12345678
+Standort: Berlin, Deutschland
+
+BERUFSERFAHRUNG
+Senior App-Entwickler - TechBerlin GmbH (2020-2024)
+• Entwicklung nativer Anwendungen mit Swift für iOS Ecosystem
+• Implementation von Core ML für maschinelles Lernen
+• Arbeit mit CloudKit und iCloud Synchronisation
+• Performance-Optimierung und Memory Management
+• Code-Reviews und Mentoring von Junior-Entwicklern
+
+Mobile Software Engineer - InnovateDeutschland (2017-2020)
+• Erstellung von Android-Apps mit Kotlin und Java
+• Integration von Kamera-APIs und Bilderkennung
+• Entwicklung von Wear OS Anwendungen für Smartwatches
+• Implementierung von Material Design Guidelines
+• Continuous Integration mit Jenkins und GitLab CI
+
+FÄHIGKEITEN
+• Programmiersprachen: Swift, Kotlin, Java, C++, Python
+• Frameworks: UIKit, SwiftUI, Android Jetpack, Wear OS
+• Tools: Xcode, Android Studio, Git, Jenkins, Docker
+• Datenbanken: Core Data, Room, Realm, PostgreSQL
+
+AUSBILDUNG
+Bachelor of Science Informatik
+Technische Universität Berlin (2013-2017)

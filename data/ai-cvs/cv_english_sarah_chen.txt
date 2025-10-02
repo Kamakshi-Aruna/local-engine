@@ -1,0 +1,32 @@
+SARAH CHEN
+Software Engineer
+
+CONTACT
+Email: sarah.chen@email.com
+Phone: +1-555-0123
+Location: San Francisco, CA
+
+EXPERIENCE
+Senior iOS Developer - TechCorp Inc. (2020-2024)
+• Developed native applications using Swift and Objective-C
+• Implemented Core Data for local storage and data persistence
+• Built responsive user interfaces with UIKit and SwiftUI
+• Collaborated with design team on user experience optimization
+• Published 3 apps to App Store with 50K+ downloads each
+
+Software Developer - StartupXYZ (2018-2020)
+• Created cross-platform applications using React Native
+• Integrated RESTful APIs and GraphQL endpoints
+• Implemented push notifications and real-time messaging
+• Worked with Firebase for backend services and analytics
+• Maintained code quality through unit testing and code reviews
+
+SKILLS
+• Programming: Swift, Objective-C, JavaScript, TypeScript
+• Frameworks: UIKit, SwiftUI, React Native, Core Data
+• Tools: Xcode, Git, TestFlight, Firebase, Fastlane
+• Design: Figma, Sketch, Auto Layout, Responsive Design
+
+EDUCATION
+Bachelor of Science in Computer Science
+University of California, Berkeley (2014-2018)

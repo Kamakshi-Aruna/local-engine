@@ -1,0 +1,32 @@
+MARIE DUBOIS
+Développeuse Applications
+
+CONTACT
+Email: marie.dubois@email.com
+Téléphone: +33-1-23-45-67-89
+Localisation: Paris, France
+
+EXPÉRIENCE
+Lead Developer Flutter - TechInnovation (2021-2024)
+• Développement d'applications cross-platform avec Dart et Flutter
+• Architecture de widgets personnalisés et animations fluides
+• Intégration avec services cloud et APIs RESTful
+• Gestion d'état avec Provider et Bloc pattern
+• Déploiement simultané sur App Store et Google Play
+
+Développeuse Mobile - StartupFrench (2018-2021)
+• Création d'applications hybrides avec Ionic et Cordova
+• Développement de plugins natifs pour fonctionnalités spécifiques
+• Implémentation de géolocalisation et cartes interactives
+• Optimisation des performances et temps de chargement
+• Formation d'équipes junior aux bonnes pratiques
+
+COMPÉTENCES
+• Langages: Dart, JavaScript, TypeScript, HTML5, CSS3
+• Frameworks: Flutter, Ionic, Angular, Vue.js
+• Outils: VS Code, Git, Firebase, Figma, Postman
+• Bases de données: SQLite, Firebase Firestore, MongoDB
+
+FORMATION
+Master en Informatique
+École Polytechnique - Palaiseau (2014-2018)
