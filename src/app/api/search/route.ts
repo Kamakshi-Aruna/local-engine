@@ -77,7 +77,8 @@ export async function POST(request: NextRequest) {
     // Extract text and metadata from search results
     const sources = searchResult.map((result: any) => ({
       text: result.payload?.text || "",
-      source: result.payload?.source || "unknown",
+      // Handle both CV structure (metadata.filename) and PDF structure (source)
+      source: result.payload?.source || result.payload?.metadata?.filename || "unknown",
       chunk_index: result.payload?.chunk_index || 0,
       score: result.score || 0
     })).filter((item: any) => item.text.length > 0);
