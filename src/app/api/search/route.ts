@@ -36,6 +36,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Normalize query for better matching
+    const normalizedQuery = query.toLowerCase().trim();
+
     // Generate embedding for the query
     const embeddingResponse = await fetch("http://localhost:11434/api/embeddings", {
       method: "POST",
@@ -44,7 +47,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         model: process.env.OLLAMA_MODEL || "llama3",
-        prompt: query,
+        prompt: normalizedQuery,
       }),
     });
 
@@ -62,7 +65,6 @@ export async function POST(request: NextRequest) {
     // Search in Qdrant
     const searchResult = await client.search(collectionName, {
       vector: queryEmbedding as number[],
-      limit: 3,
       with_payload: true,
     });
 
@@ -82,6 +84,13 @@ export async function POST(request: NextRequest) {
       chunk_index: result.payload?.chunk_index || 0,
       score: result.score || 0
     })).filter((item: any) => item.text.length > 0);
+
+    // Debug logging
+    console.log("🔍 Search Query:", query);
+    console.log("📊 Total Results Found:", searchResult.length);
+    console.log("📋 Sources after filtering:", sources.length);
+    console.log("📄 Source files:", sources.map(s => s.source));
+    console.log("💯 Scores:", sources.map(s => s.score));
 
     const relevantTexts = sources.map(s => s.text).join("\n\n");
 
