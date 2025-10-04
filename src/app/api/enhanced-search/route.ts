@@ -1,30 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Settings, Ollama, OllamaEmbedding } from "llamaindex";
 import { getVectorStore } from "@/lib/vectorStore";
 import {
-  expandQueryWithLLM,
   semanticSearchWithExpansion,
-  rerankResults
-} from "@/lib/semanticSearch";
+  rerankResults,
+  generateSingleEmbedding,
+  generateAnswer,
+  getCohereApiKeyStatus
+} from "@/lib/cohereService";
 
 export async function POST(request: NextRequest) {
   try {
-    const ollamaModel = process.env.OLLAMA_MODEL || "llama3";
-
-    Settings.llm = new Ollama({
-      model: ollamaModel,
-    });
-
-    Settings.embedModel = new OllamaEmbedding({
-      model: ollamaModel,
-    });
-
     const { query, useEnhancedSearch = true, rerankingEnabled = true } = await request.json();
 
     if (!query) {
       return NextResponse.json(
         { error: "Query is required" },
         { status: 400 }
+      );
+    }
+
+    // Validate Cohere API key
+    const keyStatus = getCohereApiKeyStatus();
+    if (!keyStatus.isValid) {
+      return NextResponse.json(
+        {
+          error: "Cohere API key validation failed",
+          details: keyStatus.error,
+          suggestion: "Please check your COHERE_API_KEY environment variable."
+        },
+        { status: 500 }
       );
     }
 
@@ -44,44 +48,41 @@ export async function POST(request: NextRequest) {
     let queryExpansion = null;
 
     if (useEnhancedSearch) {
-      const enhancedResults = await semanticSearchWithExpansion(
-        query,
-        client,
-        collectionName,
-        ollamaModel,
-        10
-      );
+      try {
+        const enhancedResults = await semanticSearchWithExpansion(
+          query,
+          client,
+          collectionName,
+          10
+        );
 
-      searchResults = enhancedResults.results;
-      queryExpansion = enhancedResults.expansion;
+        searchResults = enhancedResults.results;
+        queryExpansion = enhancedResults.expansion;
 
-      if (rerankingEnabled && searchResults.length > 0) {
-        searchResults = await rerankResults(searchResults, query, ollamaModel);
+        if (rerankingEnabled && searchResults.length > 0) {
+          searchResults = await rerankResults(searchResults, query);
+        }
+      } catch (searchError) {
+        console.error("❌ Enhanced search failed:", searchError);
+        throw new Error(`Enhanced search failed: ${searchError instanceof Error ? searchError.message : 'Unknown error'}`);
       }
     } else {
-      const embeddingResponse = await fetch("http://localhost:11434/api/embeddings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: ollamaModel,
-          prompt: query,
-        }),
-      });
+      try {
+        const queryEmbedding = await generateSingleEmbedding(query, "search_query");
 
-      if (!embeddingResponse.ok) {
-        throw new Error(`Failed to generate embedding: ${embeddingResponse.status}`);
+        if (queryEmbedding.length === 0) {
+          throw new Error("Failed to generate query embedding");
+        }
+
+        searchResults = await client.search(collectionName, {
+          vector: queryEmbedding,
+          limit: 5,
+          with_payload: true,
+        });
+      } catch (searchError) {
+        console.error("❌ Basic search failed:", searchError);
+        throw new Error(`Basic search failed: ${searchError instanceof Error ? searchError.message : 'Unknown error'}`);
       }
-
-      const embeddingData = await embeddingResponse.json();
-      const queryEmbedding = embeddingData.embedding;
-
-      searchResults = await client.search(collectionName, {
-        vector: queryEmbedding,
-        limit: 5,
-        with_payload: true,
-      });
     }
 
     if (!searchResults || searchResults.length === 0) {
@@ -103,38 +104,22 @@ export async function POST(request: NextRequest) {
 
     const relevantTexts = sources.slice(0, 5).map(s => s.text).join("\n\n---\n\n");
 
-    const systemPrompt = queryExpansion
-      ? `You are a helpful assistant analyzing CVs and documents. The user is searching for: "${query}"
-
-Related concepts that were considered in the search: ${queryExpansion.expandedQueries.join(", ")}
-
-Answer based on the provided context. If someone has experience with related technologies (e.g., iOS/Android for mobile, React/Angular for frontend), consider them relevant even if they don't use the exact terms from the query.`
-      : `You are a helpful assistant that answers questions based on the provided context.`;
-
-    const prompt = `Context from documents:
-${relevantTexts}
-
-Question: ${query}
-
-Please provide a comprehensive answer based on the context above. If listing candidates or items, be sure to include all relevant matches and explain why they match the criteria.`;
-
-    const llm = Settings.llm;
-    const response = await llm.chat({
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ]
-    });
+    // Generate answer using Cohere
+    let answer;
+    try {
+      answer = await generateAnswer(
+        query,
+        relevantTexts,
+        queryExpansion?.expandedQueries
+      );
+    } catch (answerError) {
+      console.error("❌ Answer generation failed:", answerError);
+      throw new Error(`Answer generation failed: ${answerError instanceof Error ? answerError.message : 'Unknown error'}`);
+    }
 
     return NextResponse.json({
       success: true,
-      answer: response.message.content,
+      answer: answer,
       query: query,
       queryExpansion: queryExpansion,
       sources: sources.map(s => ({
@@ -145,7 +130,8 @@ Please provide a comprehensive answer based on the context above. If listing can
         preview: s.text.substring(0, 150) + "..."
       })),
       searchMethod: useEnhancedSearch ? "enhanced" : "basic",
-      rerankingApplied: useEnhancedSearch && rerankingEnabled
+      rerankingApplied: useEnhancedSearch && rerankingEnabled,
+      aiProvider: "Cohere"
     });
 
   } catch (error) {

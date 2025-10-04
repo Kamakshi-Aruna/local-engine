@@ -6,10 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "ingest": "npx tsx scripts/ingest.ts"
+    "ingest": "npx tsx scripts/ingest.ts",
+    "reindex": "npx tsx scripts/reindex-to-cohere.ts"
   },
   "dependencies": {
     "@qdrant/js-client-rest": "^1.15.1",
+    "cohere-ai": "^7.19.0",
     "dotenv": "^17.2.2",
     "llamaindex": "^0.8.29",
     "next": "15.5.4",

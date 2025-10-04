@@ -51,6 +51,9 @@ export default function Home() {
     const newMessageId = Date.now().toString();
     const userQuestion = query.trim();
 
+    console.log('🔍 [Frontend] Starting search for:', userQuestion);
+    console.log('🆔 [Frontend] Message ID:', newMessageId);
+
     // Add user message immediately
     setMessages(prev => [...prev, {
       id: newMessageId,
@@ -63,22 +66,52 @@ export default function Home() {
     setError('');
     setQuery(''); // Clear input immediately
 
+    const requestBody = {
+      query: userQuestion,
+      useEnhancedSearch: true,
+      rerankingEnabled: true
+    };
+
+    console.log('📤 [Frontend] Sending request to /api/enhanced-search with body:', requestBody);
+    console.time('🕐 [Frontend] Search request duration');
+
     try {
       const response = await fetch('/api/enhanced-search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          query: userQuestion,
-          useEnhancedSearch: true,
-          rerankingEnabled: true
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.timeEnd('🕐 [Frontend] Search request duration');
+      console.log('📥 [Frontend] Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+
+      if (!response.ok) {
+        console.error('❌ [Frontend] HTTP error:', {
+          status: response.status,
+          statusText: response.statusText
+        });
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
+      console.log('📊 [Frontend] Response data:', {
+        success: data.success,
+        hasAnswer: !!data.answer,
+        answerLength: data.answer?.length || 0,
+        sourcesCount: data.sources?.length || 0,
+        searchMethod: data.searchMethod,
+        rerankingApplied: data.rerankingApplied,
+        hasError: !!data.error
+      });
 
       if (data.success) {
+        console.log('✅ [Frontend] Search successful, updating message with answer');
         // Update the message with the answer
         setMessages(prev => prev.map(msg =>
           msg.id === newMessageId
@@ -86,16 +119,19 @@ export default function Home() {
             : msg
         ));
       } else {
+        console.error('❌ [Frontend] Search failed:', data.error);
         setError(data.error || 'Search failed');
         // Remove the message if there was an error
         setMessages(prev => prev.filter(msg => msg.id !== newMessageId));
       }
     } catch (err) {
+      console.error('❌ [Frontend] Network error during search:', err);
       setError('Failed to connect to search service');
       // Remove the message if there was an error
       setMessages(prev => prev.filter(msg => msg.id !== newMessageId));
     } finally {
       setLoading(false);
+      console.log('🏁 [Frontend] Search process completed');
     }
   };
 

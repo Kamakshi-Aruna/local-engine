@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getVectorStore } from "@/lib/vectorStore";
+import { generateCohereEmbeddings } from "@/lib/cohereService";
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,47 +53,36 @@ export async function POST(request: NextRequest) {
     const chunks = splitIntoChunks(textContent, 500);
 
     // Generate embeddings and store in Qdrant
-    const { client, collectionName } = await getVectorStore();
+    const { client, collectionName, embeddingDimension } = await getVectorStore();
 
     // Ensure collection exists, create if it doesn't
     try {
       await client.getCollection(collectionName);
     } catch (error) {
       // Collection doesn't exist, create it
-      console.log(`Creating collection: ${collectionName}`);
       await client.createCollection(collectionName, {
         vectors: {
-          size: 4096, // Ollama embedding dimension
+          size: embeddingDimension || 1024, // Cohere embed-english-v3.0 dimension
           distance: "Cosine",
         },
       });
-      console.log(`✅ Created collection: ${collectionName}`);
     }
 
     // Get current collection info to determine next ID
     let startId = 1000 + Math.floor(Math.random() * 10000); // Random ID to avoid conflicts
 
+    // Generate embeddings for all chunks using Cohere
+    const embeddings = await generateCohereEmbeddings(chunks, "search_document");
+
+    if (embeddings.length === 0) {
+      throw new Error("Failed to generate embeddings with Cohere");
+    }
+
     const points: any[] = [];
 
-    for (let i = 0; i < chunks.length; i++) {
+    for (let i = 0; i < chunks.length && i < embeddings.length; i++) {
       const chunk = chunks[i];
-
-      // Generate embedding for this chunk
-      const embeddingResponse = await fetch("http://localhost:11434/api/embeddings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: process.env.OLLAMA_MODEL || "llama3",
-          prompt: chunk,
-        }),
-      });
-
-      if (!embeddingResponse.ok) {
-        throw new Error(`Failed to generate embedding for chunk ${i}`);
-      }
-
-      const embeddingData = await embeddingResponse.json();
-      const embedding = embeddingData.embedding;
+      const embedding = embeddings[i];
 
       if (embedding && embedding.length > 0) {
         const point = {
@@ -107,8 +97,6 @@ export async function POST(request: NextRequest) {
           }
         };
 
-        // Debug logging
-        console.log(`Creating PDF point ${startId + i} for file: ${file.name}`);
         points.push(point);
       }
     }
