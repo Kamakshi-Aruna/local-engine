@@ -64,12 +64,16 @@ export default function Home() {
     setQuery(''); // Clear input immediately
 
     try {
-      const response = await fetch('/api/search', {
+      const response = await fetch('/api/enhanced-search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: userQuestion }),
+        body: JSON.stringify({
+          query: userQuestion,
+          useEnhancedSearch: true,
+          rerankingEnabled: true
+        }),
       });
 
       const data = await response.json();
@@ -196,12 +200,16 @@ export default function Home() {
     setError('');
 
     try {
-      const response = await fetch('/api/search', {
+      const response = await fetch('/api/enhanced-search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: editedQuestion }),
+        body: JSON.stringify({
+          query: editedQuestion,
+          useEnhancedSearch: true,
+          rerankingEnabled: true
+        }),
       });
 
       const data = await response.json();
