@@ -5,9 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "ingest": "npx tsx scripts/ingest.ts",
-    "reindex": "npx tsx scripts/reindex-to-cohere.ts"
+    "start": "next start"
   },
   "dependencies": {
     "@qdrant/js-client-rest": "^1.15.1",
