@@ -5,12 +5,12 @@ import {
   rerankResults,
   generateSingleEmbedding,
   generateAnswer,
-  getCohereApiKeyStatus
-} from "@/lib/cohereService";
+  getVoyageApiKeyStatus
+} from "@/lib/voyageService";
 
 export async function POST(request: NextRequest) {
   try {
-    const { query, useEnhancedSearch = true, rerankingEnabled = true } = await request.json();
+    const { query, useEnhancedSearch = true, rerankingEnabled = true, model = "voyage-large-2" } = await request.json();
 
     if (!query) {
       return NextResponse.json(
@@ -19,14 +19,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate Cohere API key
-    const keyStatus = getCohereApiKeyStatus();
+    // Validate Voyage AI API key
+    const keyStatus = getVoyageApiKeyStatus();
     if (!keyStatus.isValid) {
       return NextResponse.json(
         {
-          error: "Cohere API key validation failed",
+          error: "Voyage AI API key validation failed",
           details: keyStatus.error,
-          suggestion: "Please check your COHERE_API_KEY environment variable."
+          suggestion: "Please check your VOYAGE_API_KEY environment variable."
         },
         { status: 500 }
       );
@@ -53,13 +53,14 @@ export async function POST(request: NextRequest) {
           query,
           client,
           collectionName,
-          10
+          10,
+          model
         );
 
         searchResults = enhancedResults.results;
         queryExpansion = enhancedResults.expansion;
 
-        if (rerankingEnabled && searchResults.length > 0) {
+        if (rerankingEnabled && searchResults && searchResults.length > 0) {
           searchResults = await rerankResults(searchResults, query);
         }
       } catch (searchError) {
@@ -68,9 +69,9 @@ export async function POST(request: NextRequest) {
       }
     } else {
       try {
-        const queryEmbedding = await generateSingleEmbedding(query, "search_query");
+        const queryEmbedding = await generateSingleEmbedding(query, model);
 
-        if (queryEmbedding.length === 0) {
+        if (!queryEmbedding || queryEmbedding.length === 0) {
           throw new Error("Failed to generate query embedding");
         }
 
@@ -104,14 +105,10 @@ export async function POST(request: NextRequest) {
 
     const relevantTexts = sources.slice(0, 5).map(s => s.text).join("\n\n---\n\n");
 
-    // Generate answer using Cohere
+    // Generate answer using Voyage AI
     let answer;
     try {
-      answer = await generateAnswer(
-        query,
-        relevantTexts,
-        queryExpansion?.expandedQueries
-      );
+      answer = await generateAnswer(query, relevantTexts);
     } catch (answerError) {
       console.error("❌ Answer generation failed:", answerError);
       throw new Error(`Answer generation failed: ${answerError instanceof Error ? answerError.message : 'Unknown error'}`);
@@ -131,7 +128,8 @@ export async function POST(request: NextRequest) {
       })),
       searchMethod: useEnhancedSearch ? "enhanced" : "basic",
       rerankingApplied: useEnhancedSearch && rerankingEnabled,
-      aiProvider: "Cohere"
+      aiProvider: "Voyage AI",
+      model: model
     });
 
   } catch (error) {

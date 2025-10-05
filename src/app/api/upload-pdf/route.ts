@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getVectorStore } from "@/lib/vectorStore";
-import { generateCohereEmbeddings } from "@/lib/cohereService";
+import { generateVoyageEmbeddings } from "@/lib/voyageService";
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('pdf') as File;
+    const model = (formData.get('model') as string) || "voyage-large-2";
 
     if (!file) {
       return NextResponse.json(
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     // Split text into chunks (roughly 500 characters each)
     const chunks = splitIntoChunks(textContent, 500);
 
-    // Generate embeddings and store in Qdrant
+    // Generate embeddings and store in Qdrant using Voyage AI
     const { client, collectionName, embeddingDimension } = await getVectorStore();
 
     // Ensure collection exists, create if it doesn't
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
       // Collection doesn't exist, create it
       await client.createCollection(collectionName, {
         vectors: {
-          size: embeddingDimension || 1024, // Cohere embed-english-v3.0 dimension
+          size: embeddingDimension || 1536,
           distance: "Cosine",
         },
       });
@@ -71,11 +72,11 @@ export async function POST(request: NextRequest) {
     // Get current collection info to determine next ID
     let startId = 1000 + Math.floor(Math.random() * 10000); // Random ID to avoid conflicts
 
-    // Generate embeddings for all chunks using Cohere
-    const embeddings = await generateCohereEmbeddings(chunks, "search_document");
+    // Generate embeddings for all chunks using Voyage AI
+    const embeddings = await generateVoyageEmbeddings(chunks, model);
 
-    if (embeddings.length === 0) {
-      throw new Error("Failed to generate embeddings with Cohere");
+    if (!embeddings || embeddings.length === 0) {
+      throw new Error("Failed to generate embeddings with Voyage AI");
     }
 
     const points: any[] = [];
@@ -94,6 +95,8 @@ export async function POST(request: NextRequest) {
             type: "pdf",
             chunk_index: i,
             total_chunks: chunks.length,
+            provider: "voyage",
+            model: model,
           }
         };
 
@@ -111,9 +114,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Successfully processed ${file.name}`,
+      message: `Successfully processed ${file.name} with Voyage AI`,
       chunks_created: points.length,
       filename: file.name,
+      provider: "voyage",
+      model: model,
+      collection: collectionName
     });
 
   } catch (error: any) {
