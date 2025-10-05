@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getVectorStore } from "@/lib/vectorStore";
+import { clearVectorStore, vectorStore } from "@/lib/vectorStore";
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -12,57 +12,41 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Get vector store config
-    const { client, collectionName } = await getVectorStore();
+    // For our simple in-memory implementation, we'll filter documents
+    const documents = vectorStore.documents;
+    const initialCount = documents.length;
 
-    // Check if collection exists
-    try {
-      await client.getCollection(collectionName);
-    } catch (error) {
+    if (filename === "ALL") {
+      // Clear all documents
+      clearVectorStore();
       return NextResponse.json({
-        success: false,
-        error: "No collection found",
+        success: true,
+        message: `Cleared all documents`,
+        deletedCount: initialCount
       });
     }
 
-    // Search for all points with this filename
-    const scrollResult = await client.scroll(collectionName, {
-      filter: {
-        must: [
-          {
-            key: "source",
-            match: {
-              value: filename
-            }
-          }
-        ]
-      },
-      limit: 1000, // Max number of chunks per file
-      with_payload: false,
-      with_vector: false
-    });
+    // Filter out documents from the specified file
+    const filteredDocuments = documents.filter((doc: any) => doc.source !== filename);
+    const deletedCount = initialCount - filteredDocuments.length;
 
-    if (scrollResult.points && scrollResult.points.length > 0) {
-      // Extract point IDs
-      const pointIds = scrollResult.points.map((point: any) => point.id);
-
-      // Delete all points for this file
-      await client.delete(collectionName, {
-        points: pointIds
-      });
-
-      return NextResponse.json({
-        success: true,
-        message: `Deleted ${pointIds.length} chunks for ${filename}`,
-        deletedCount: pointIds.length
-      });
-    } else {
+    if (deletedCount === 0) {
       return NextResponse.json({
         success: false,
         error: "File not found in database",
         filename: filename
       });
     }
+
+    // Replace the documents array (simple implementation)
+    vectorStore.documents = filteredDocuments;
+
+    return NextResponse.json({
+      success: true,
+      message: `Deleted ${deletedCount} chunks for ${filename}`,
+      deletedCount: deletedCount,
+      remainingChunks: filteredDocuments.length
+    });
 
   } catch (error: any) {
     console.error("❌ Delete error:", error);

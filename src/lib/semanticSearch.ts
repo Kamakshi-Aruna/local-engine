@@ -1,190 +1,176 @@
-import { Ollama } from "llamaindex";
+import { EmbeddingService } from './embeddingService';
+import { CohereReranker } from './cohereReranker';
 
-export interface QueryExpansion {
+export interface SearchResult {
+  id: string;
+  text: string;
+  source: string;
+  chunkIndex: number;
+  score: number;
+  originalScore?: number;
+  rerankScore?: number;
+}
+
+export interface EnhancedSearchResult {
+  results: SearchResult[];
+  expandedTerms: string[];
   originalQuery: string;
-  expandedQueries: string[];
-  searchContext: string;
+  totalFound: number;
+  searchMethod: 'basic' | 'enhanced' | 'reranked';
 }
 
-export async function expandQueryWithLLM(
-  query: string,
-  llmModel: string = "llama3"
-): Promise<QueryExpansion> {
-  const ollama = new Ollama({ model: llmModel });
+export class SemanticSearchService {
+  private embeddingService: EmbeddingService;
+  private reranker: CohereReranker;
 
-  const expansionPrompt = `Given the search query: "${query}"
-
-Generate related terms, synonyms, and associated concepts that would help find relevant candidates or information.
-For example:
-- If searching for "mobile developer", include: iOS, Android, Swift, Kotlin, React Native, etc.
-- If searching for "data scientist", include: machine learning, Python, TensorFlow, statistics, etc.
-
-Output ONLY a comma-separated list of related terms (no explanations, no formatting):`;
-
-  try {
-    const response = await ollama.complete({
-      prompt: expansionPrompt,
-    });
-
-    const expandedTerms = response.text
-      .split(',')
-      .map(term => term.trim())
-      .filter(term => term.length > 0);
-
-    const uniqueTerms = [...new Set([query, ...expandedTerms])];
-
-    return {
-      originalQuery: query,
-      expandedQueries: uniqueTerms,
-      searchContext: createSearchContext(query, uniqueTerms)
-    };
-  } catch (error) {
-    console.error("Error expanding query with LLM:", error);
-    return {
-      originalQuery: query,
-      expandedQueries: [query],
-      searchContext: query
-    };
+  constructor() {
+    this.embeddingService = new EmbeddingService();
+    this.reranker = new CohereReranker();
   }
-}
 
-function createSearchContext(originalQuery: string, expandedTerms: string[]): string {
-  return `${originalQuery} ${expandedTerms.join(" ")}`;
-}
-
-export async function generateMultipleEmbeddings(
-  queries: string[],
-  model: string = "llama3"
-): Promise<number[][]> {
-  const embeddings: number[][] = [];
-
-  for (const query of queries) {
+  /**
+   * Basic semantic search using embeddings
+   */
+  async basicSearch(query: string, limit: number = 5): Promise<EnhancedSearchResult> {
     try {
-      const response = await fetch("http://localhost:11434/api/embeddings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: model,
-          prompt: query,
-        }),
-      });
+      const results = await this.embeddingService.searchDocuments(query, limit);
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.embedding && data.embedding.length > 0) {
-          embeddings.push(data.embedding);
+      return {
+        results,
+        expandedTerms: [query],
+        originalQuery: query,
+        totalFound: results.length,
+        searchMethod: 'basic'
+      };
+    } catch (error) {
+      console.error('Error in basic search:', error);
+      return {
+        results: [],
+        expandedTerms: [query],
+        originalQuery: query,
+        totalFound: 0,
+        searchMethod: 'basic'
+      };
+    }
+  }
+
+  /**
+   * Enhanced search with query expansion
+   */
+  async enhancedSearch(query: string, limit: number = 5): Promise<EnhancedSearchResult> {
+    try {
+      const searchResult = await this.embeddingService.enhancedSearch(query, limit);
+
+      return {
+        results: searchResult.results,
+        expandedTerms: searchResult.expandedTerms,
+        originalQuery: query,
+        totalFound: searchResult.results.length,
+        searchMethod: 'enhanced'
+      };
+    } catch (error) {
+      console.error('Error in enhanced search:', error);
+      // Fallback to basic search
+      return await this.basicSearch(query, limit);
+    }
+  }
+
+  /**
+   * Full search with enhancement and reranking
+   */
+  async searchWithReranking(
+    query: string,
+    limit: number = 5,
+    useEnhancement: boolean = true
+  ): Promise<EnhancedSearchResult> {
+    try {
+      // First, get search results
+      const searchResult = useEnhancement
+        ? await this.enhancedSearch(query, limit * 2) // Get more results for reranking
+        : await this.basicSearch(query, limit * 2);
+
+      // If no results, return early
+      if (searchResult.results.length === 0) {
+        return searchResult;
+      }
+
+      // Rerank the results
+      const rerankedResults = await this.reranker.rerankResults(
+        query,
+        searchResult.results,
+        limit
+      );
+
+      return {
+        results: rerankedResults,
+        expandedTerms: searchResult.expandedTerms,
+        originalQuery: query,
+        totalFound: rerankedResults.length,
+        searchMethod: 'reranked'
+      };
+    } catch (error) {
+      console.error('Error in search with reranking:', error);
+      // Fallback to enhanced search without reranking
+      return await this.enhancedSearch(query, limit);
+    }
+  }
+
+  /**
+   * Add document to the search index
+   */
+  async addDocument(text: string, source: string, chunkIndex: number = 0): Promise<void> {
+    try {
+      await this.embeddingService.addDocument(text, source, chunkIndex);
+    } catch (error) {
+      console.error('Error adding document:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process and chunk a large text document
+   */
+  chunkText(text: string, chunkSize: number = 1000, overlap: number = 200): string[] {
+    const chunks: string[] = [];
+    let start = 0;
+
+    while (start < text.length) {
+      const end = Math.min(start + chunkSize, text.length);
+      const chunk = text.slice(start, end);
+
+      // Try to break at sentence boundaries
+      if (end < text.length) {
+        const lastSentenceEnd = chunk.lastIndexOf('.');
+        if (lastSentenceEnd > chunk.length * 0.5) {
+          chunks.push(chunk.slice(0, lastSentenceEnd + 1));
+          start = start + lastSentenceEnd + 1 - overlap;
+        } else {
+          chunks.push(chunk);
+          start = end - overlap;
         }
-      }
-    } catch (error) {
-      console.error(`Error generating embedding for "${query}":`, error);
-    }
-  }
-
-  return embeddings;
-}
-
-export function combineEmbeddings(embeddings: number[][], weights?: number[]): number[] {
-  if (embeddings.length === 0) return [];
-
-  const dimension = embeddings[0].length;
-  const combined = new Array(dimension).fill(0);
-
-  const finalWeights = weights || new Array(embeddings.length).fill(1.0 / embeddings.length);
-
-  for (let i = 0; i < embeddings.length; i++) {
-    const weight = finalWeights[i];
-    for (let j = 0; j < dimension; j++) {
-      combined[j] += embeddings[i][j] * weight;
-    }
-  }
-
-  const magnitude = Math.sqrt(combined.reduce((sum, val) => sum + val * val, 0));
-  if (magnitude > 0) {
-    for (let i = 0; i < dimension; i++) {
-      combined[i] /= magnitude;
-    }
-  }
-
-  return combined;
-}
-
-export async function semanticSearchWithExpansion(
-  query: string,
-  client: any,
-  collectionName: string,
-  llmModel: string = "llama3",
-  topK: number = 5
-) {
-  const expansion = await expandQueryWithLLM(query, llmModel);
-
-  const primaryEmbeddings = await generateMultipleEmbeddings(
-    expansion.expandedQueries.slice(0, 3),
-    llmModel
-  );
-
-  const results: any[] = [];
-  const seenIds = new Set<number>();
-
-  for (const embedding of primaryEmbeddings) {
-    const searchResult = await client.search(collectionName, {
-      vector: embedding,
-      limit: topK,
-      with_payload: true,
-    });
-
-    for (const result of searchResult) {
-      if (!seenIds.has(result.id)) {
-        seenIds.add(result.id);
-        results.push(result);
+      } else {
+        chunks.push(chunk);
+        break;
       }
     }
+
+    return chunks.filter(chunk => chunk.trim().length > 50); // Filter out very short chunks
   }
 
-  results.sort((a, b) => b.score - a.score);
+  /**
+   * Add a full document by chunking it first
+   */
+  async addFullDocument(text: string, source: string): Promise<void> {
+    const chunks = this.chunkText(text);
+    console.log(`Processing ${source}: ${chunks.length} chunks created from ${text.length} characters`);
 
-  return {
-    results: results.slice(0, topK),
-    expansion: expansion,
-    totalFound: results.length
-  };
-}
-
-export async function rerankResults(
-  results: any[],
-  query: string,
-  llmModel: string = "llama3"
-): Promise<any[]> {
-  const ollama = new Ollama({ model: llmModel });
-
-  const rerankedResults = [];
-
-  for (const result of results) {
-    const relevancePrompt = `Query: "${query}"
-Content: "${result.payload?.text?.substring(0, 500) || ''}"
-
-Rate the relevance of this content to the query on a scale of 0-10 (output only the number):`;
-
-    try {
-      const response = await ollama.complete({
-        prompt: relevancePrompt,
-      });
-
-      const score = parseFloat(response.text.trim()) / 10;
-      rerankedResults.push({
-        ...result,
-        rerankedScore: isNaN(score) ? result.score : score,
-        originalScore: result.score
-      });
-    } catch (error) {
-      rerankedResults.push({
-        ...result,
-        rerankedScore: result.score,
-        originalScore: result.score
-      });
+    for (let i = 0; i < chunks.length; i++) {
+      console.log(`Processing chunk ${i + 1}/${chunks.length} for ${source}`);
+      await this.addDocument(chunks[i], source, i);
+      // Small delay to avoid overwhelming the API
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
+
+    console.log(`Finished processing ${source}. Total chunks processed: ${chunks.length}`);
   }
-
-  rerankedResults.sort((a, b) => b.rerankedScore - a.rerankedScore);
-
-  return rerankedResults;
 }

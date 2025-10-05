@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getVectorStore } from "@/lib/vectorStore";
+import { SemanticSearchService } from "@/lib/semanticSearch";
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,85 +48,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Split text into chunks (roughly 500 characters each)
-    const chunks = splitIntoChunks(textContent, 500);
+    // Initialize our semantic search service
+    const searchService = new SemanticSearchService();
 
-    // Generate embeddings and store in Qdrant
-    const { client, collectionName } = await getVectorStore();
-
-    // Ensure collection exists, create if it doesn't
     try {
-      await client.getCollection(collectionName);
-    } catch (error) {
-      // Collection doesn't exist, create it
-      console.log(`Creating collection: ${collectionName}`);
-      await client.createCollection(collectionName, {
-        vectors: {
-          size: 4096, // Ollama embedding dimension
-          distance: "Cosine",
+      // Use our new semantic search service to add the document
+      await searchService.addFullDocument(textContent, file.name);
+
+      // Debug: Check document count after adding
+      const { getDocumentCount } = await import("@/lib/vectorStore");
+      const docCount = getDocumentCount();
+      console.log(`✅ Successfully processed PDF: ${file.name}. Total documents: ${docCount}`);
+
+      return NextResponse.json({
+        success: true,
+        message: `Successfully processed ${file.name}`,
+        filename: file.name,
+        textLength: textContent.length,
+        chunks_created: Math.ceil(textContent.length / 1000), // Approximate chunk count
+        totalDocuments: docCount
+      });
+
+    } catch (embeddingError) {
+      console.error("Error processing PDF with embeddings:", embeddingError);
+      return NextResponse.json(
+        {
+          error: "Failed to process PDF embeddings",
+          details: embeddingError instanceof Error ? embeddingError.message : "Unknown error"
         },
-      });
-      console.log(`✅ Created collection: ${collectionName}`);
+        { status: 500 }
+      );
     }
-
-    // Get current collection info to determine next ID
-    let startId = 1000 + Math.floor(Math.random() * 10000); // Random ID to avoid conflicts
-
-    const points: any[] = [];
-
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-
-      // Generate embedding for this chunk
-      const embeddingResponse = await fetch("http://localhost:11434/api/embeddings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: process.env.OLLAMA_MODEL || "llama3",
-          prompt: chunk,
-        }),
-      });
-
-      if (!embeddingResponse.ok) {
-        throw new Error(`Failed to generate embedding for chunk ${i}`);
-      }
-
-      const embeddingData = await embeddingResponse.json();
-      const embedding = embeddingData.embedding;
-
-      if (embedding && embedding.length > 0) {
-        const point = {
-          id: startId + i,
-          vector: embedding,
-          payload: {
-            text: chunk,
-            source: file.name,
-            type: "pdf",
-            chunk_index: i,
-            total_chunks: chunks.length,
-          }
-        };
-
-        // Debug logging
-        console.log(`Creating PDF point ${startId + i} for file: ${file.name}`);
-        points.push(point);
-      }
-    }
-
-    // Upload all points to Qdrant
-    if (points.length > 0) {
-      await client.upsert(collectionName, {
-        wait: true,
-        points: points,
-      });
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: `Successfully processed ${file.name}`,
-      chunks_created: points.length,
-      filename: file.name,
-    });
 
   } catch (error: any) {
     console.error("PDF upload error:", error);
@@ -138,32 +90,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-// Helper function to split text into chunks
-function splitIntoChunks(text: string, maxChunkSize: number): string[] {
-  const chunks: string[] = [];
-  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-
-  let currentChunk = '';
-
-  for (const sentence of sentences) {
-    const trimmedSentence = sentence.trim();
-    if (trimmedSentence.length === 0) continue;
-
-    // If adding this sentence would exceed the chunk size, save current chunk
-    if (currentChunk.length + trimmedSentence.length > maxChunkSize && currentChunk.length > 0) {
-      chunks.push(currentChunk.trim());
-      currentChunk = trimmedSentence;
-    } else {
-      currentChunk += (currentChunk.length > 0 ? '. ' : '') + trimmedSentence;
-    }
-  }
-
-  // Add the last chunk if it has content
-  if (currentChunk.trim().length > 0) {
-    chunks.push(currentChunk.trim());
-  }
-
-  return chunks;
 }
