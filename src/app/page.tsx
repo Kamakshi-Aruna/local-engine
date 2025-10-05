@@ -72,11 +72,11 @@ export default function Home() {
       rerankingEnabled: true
     };
 
-    console.log('📤 [Frontend] Sending request to /api/enhanced-search with body:', requestBody);
+    console.log('📤 [Frontend] Sending request to /api/huggingface-search with body:', requestBody);
     console.time('🕐 [Frontend] Search request duration');
 
     try {
-      const response = await fetch('/api/enhanced-search', {
+      const response = await fetch('/api/huggingface-search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -236,7 +236,7 @@ export default function Home() {
     setError('');
 
     try {
-      const response = await fetch('/api/enhanced-search', {
+      const response = await fetch('/api/huggingface-search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

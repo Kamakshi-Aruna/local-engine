@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getVectorStore } from "@/lib/vectorStore";
-import { generateCohereEmbeddings } from "@/lib/cohereService";
+import { generateHuggingFaceEmbeddings } from "@/lib/huggingfaceService";
 
 export async function POST(request: NextRequest) {
   try {
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       // Collection doesn't exist, create it
       await client.createCollection(collectionName, {
         vectors: {
-          size: embeddingDimension || 1024, // Cohere embed-english-v3.0 dimension
+          size: embeddingDimension || 384, // Hugging Face all-MiniLM-L6-v2 dimension
           distance: "Cosine",
         },
       });
@@ -71,11 +71,11 @@ export async function POST(request: NextRequest) {
     // Get current collection info to determine next ID
     let startId = 1000 + Math.floor(Math.random() * 10000); // Random ID to avoid conflicts
 
-    // Generate embeddings for all chunks using Cohere
-    const embeddings = await generateCohereEmbeddings(chunks, "search_document");
+    // Generate embeddings for all chunks using Hugging Face
+    const embeddings = await generateHuggingFaceEmbeddings(chunks);
 
     if (embeddings.length === 0) {
-      throw new Error("Failed to generate embeddings with Cohere");
+      throw new Error("Failed to generate embeddings with Hugging Face");
     }
 
     const points: any[] = [];
