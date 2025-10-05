@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getVectorStore } from "@/lib/vectorStore";
-import { generateCohereEmbeddings } from "@/lib/cohereService";
+import { generateGeminiEmbeddings, splitIntoChunks } from "@/lib/geminiService";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
 
     // Convert file to buffer
     const bytes = await file.arrayBuffer();
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
       // Collection doesn't exist, create it
       await client.createCollection(collectionName, {
         vectors: {
-          size: embeddingDimension || 1024, // Cohere embed-english-v3.0 dimension
+          size: embeddingDimension || 768, // Gemini text-embedding-004 dimension
           distance: "Cosine",
         },
       });
@@ -71,11 +72,11 @@ export async function POST(request: NextRequest) {
     // Get current collection info to determine next ID
     let startId = 1000 + Math.floor(Math.random() * 10000); // Random ID to avoid conflicts
 
-    // Generate embeddings for all chunks using Cohere
-    const embeddings = await generateCohereEmbeddings(chunks, "search_document");
+    // Generate embeddings for all chunks using Gemini
+    const embeddings = await generateGeminiEmbeddings(chunks);
 
     if (embeddings.length === 0) {
-      throw new Error("Failed to generate embeddings with Cohere");
+      throw new Error("Failed to generate embeddings with Gemini");
     }
 
     const points: any[] = [];
@@ -111,9 +112,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Successfully processed ${file.name}`,
+      message: `Successfully processed ${file.name} with Gemini AI`,
       chunks_created: points.length,
       filename: file.name,
+      aiProvider: "Gemini"
     });
 
   } catch (error: any) {
@@ -126,32 +128,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-// Helper function to split text into chunks
-function splitIntoChunks(text: string, maxChunkSize: number): string[] {
-  const chunks: string[] = [];
-  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-
-  let currentChunk = '';
-
-  for (const sentence of sentences) {
-    const trimmedSentence = sentence.trim();
-    if (trimmedSentence.length === 0) continue;
-
-    // If adding this sentence would exceed the chunk size, save current chunk
-    if (currentChunk.length + trimmedSentence.length > maxChunkSize && currentChunk.length > 0) {
-      chunks.push(currentChunk.trim());
-      currentChunk = trimmedSentence;
-    } else {
-      currentChunk += (currentChunk.length > 0 ? '. ' : '') + trimmedSentence;
-    }
-  }
-
-  // Add the last chunk if it has content
-  if (currentChunk.trim().length > 0) {
-    chunks.push(currentChunk.trim());
-  }
-
-  return chunks;
 }

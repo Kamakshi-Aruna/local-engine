@@ -13,13 +13,13 @@ export async function getVectorStore() {
 
   const client = new QdrantClient(config);
 
-  const collectionName = process.env.QDRANT_COLLECTION || "pdf_documents_cohere";
+  const collectionName = process.env.QDRANT_COLLECTION || "pdf_documents_gemini";
 
   // Return a simplified object that the API route can use
   return {
     client,
     collectionName,
     type: 'qdrant',
-    embeddingDimension: 1024 // Cohere embed-english-v3.0 dimension
+    embeddingDimension: 768 // Gemini text-embedding-004 dimension
   };
 }

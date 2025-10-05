@@ -2,15 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { getVectorStore } from "@/lib/vectorStore";
 import {
   semanticSearchWithExpansion,
-  rerankResults,
   generateSingleEmbedding,
-  generateAnswer,
-  getCohereApiKeyStatus
-} from "@/lib/cohereService";
+  generateAnswer
+} from "@/lib/geminiService";
 
 export async function POST(request: NextRequest) {
   try {
-    const { query, useEnhancedSearch = true, rerankingEnabled = true } = await request.json();
+    const {
+      query,
+      useEnhancedSearch = true,
+      filters = {}
+    } = await request.json();
 
     if (!query) {
       return NextResponse.json(
@@ -19,18 +21,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate Cohere API key
-    const keyStatus = getCohereApiKeyStatus();
-    if (!keyStatus.isValid) {
-      return NextResponse.json(
-        {
-          error: "Cohere API key validation failed",
-          details: keyStatus.error,
-          suggestion: "Please check your COHERE_API_KEY environment variable."
-        },
-        { status: 500 }
-      );
-    }
 
     const { client, collectionName } = await getVectorStore();
 
@@ -53,22 +43,20 @@ export async function POST(request: NextRequest) {
           query,
           client,
           collectionName,
-          10
+          20,
+          filters
         );
 
         searchResults = enhancedResults.results;
-        queryExpansion = enhancedResults.expansion;
+        queryExpansion = null;
 
-        if (rerankingEnabled && searchResults.length > 0) {
-          searchResults = await rerankResults(searchResults, query);
-        }
       } catch (searchError) {
         console.error("❌ Enhanced search failed:", searchError);
         throw new Error(`Enhanced search failed: ${searchError instanceof Error ? searchError.message : 'Unknown error'}`);
       }
     } else {
       try {
-        const queryEmbedding = await generateSingleEmbedding(query, "search_query");
+        const queryEmbedding = await generateSingleEmbedding(query);
 
         if (queryEmbedding.length === 0) {
           throw new Error("Failed to generate query embedding");
@@ -98,19 +86,25 @@ export async function POST(request: NextRequest) {
       text: result.payload?.text || "",
       source: result.payload?.source || "unknown",
       chunk_index: result.payload?.chunk_index || 0,
-      score: result.rerankedScore || result.score || 0,
-      originalScore: result.originalScore || result.score || 0
+      score: result.score || 0,
     })).filter((item: any) => item.text.length > 0);
 
-    const relevantTexts = sources.slice(0, 5).map(s => s.text).join("\n\n---\n\n");
+    const relevantTexts = sources.slice(0, 5).map((s: any) => s.text).join("\n\n---\n\n");
 
-    // Generate answer using Cohere
+    // Generate answer using Gemini
     let answer;
     try {
+      // Pass sources information for name extraction
+      const sourcesInfo = sources.map((s: any) => ({
+        fileName: s.source,
+        text: s.text,
+        score: s.score
+      }));
+
       answer = await generateAnswer(
         query,
         relevantTexts,
-        queryExpansion?.expandedQueries
+        sourcesInfo
       );
     } catch (answerError) {
       console.error("❌ Answer generation failed:", answerError);
@@ -122,16 +116,15 @@ export async function POST(request: NextRequest) {
       answer: answer,
       query: query,
       queryExpansion: queryExpansion,
-      sources: sources.map(s => ({
+      sources: sources.map((s: any) => ({
         file: s.source,
         chunk: s.chunk_index,
         score: s.score,
-        originalScore: s.originalScore,
         preview: s.text.substring(0, 150) + "..."
       })),
       searchMethod: useEnhancedSearch ? "enhanced" : "basic",
-      rerankingApplied: useEnhancedSearch && rerankingEnabled,
-      aiProvider: "Cohere"
+      aiProvider: "Gemini",
+      filters: filters
     });
 
   } catch (error) {
