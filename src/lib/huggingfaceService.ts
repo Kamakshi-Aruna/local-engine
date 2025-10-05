@@ -23,6 +23,45 @@ async function getEmbedderPipeline() {
     return embedderPipeline;
 }
 
+// Alternative: Use Hugging Face API for embeddings
+async function generateHuggingFaceAPIEmbedding(text: string): Promise<number[]> {
+    const apiKey = process.env.HUGGINGFACE_API_KEY;
+
+    if (!apiKey) {
+        console.log('No HF API key found, falling back to local model');
+        return generateSingleHuggingFaceEmbedding(text);
+    }
+
+    try {
+        console.log('Using Hugging Face API for embedding generation');
+        const response = await fetch(
+            'https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2',
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    inputs: text,
+                    options: { wait_for_model: true }
+                }),
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`HF API error: ${response.status}`);
+        }
+
+        const embedding = await response.json();
+        console.log(`Generated API embedding of dimension: ${embedding.length}`);
+        return embedding;
+    } catch (error) {
+        console.error('HF API embedding failed, falling back to local:', error);
+        return generateSingleHuggingFaceEmbedding(text);
+    }
+}
+
 export interface QueryExpansion {
     originalQuery: string;
     expandedQueries: string[];
@@ -90,27 +129,50 @@ export async function semanticSearchWithHuggingFace(
     collectionName: string,
     topK: number = 10
 ) {
-    const queryEmbedding = await generateSingleHuggingFaceEmbedding(query);
+    console.log(`🔍 Searching for query: "${query}" in collection: ${collectionName}`);
+
+    // Try API first, fallback to local model
+    const queryEmbedding = process.env.HUGGINGFACE_API_KEY
+        ? await generateHuggingFaceAPIEmbedding(query)
+        : await generateSingleHuggingFaceEmbedding(query);
+
     let results: any[] = [];
 
     if (queryEmbedding.length > 0) {
+        console.log(`✅ Generated embedding of dimension: ${queryEmbedding.length}`);
+
         const searchResult = await client.search(collectionName, {
             vector: queryEmbedding,
             limit: topK * 3,  // Increase limit to get more results
             with_payload: true,
+            with_vectors: false,
         });
+
+        console.log(`📊 Found ${searchResult.length} initial results`);
+
+        // Filter out results with very low similarity scores (irrelevant results)
+        const relevantResults = searchResult.filter(result => result.score > 0.2);
+        console.log(`📊 After relevance filtering (>0.2): ${relevantResults.length} results`);
 
         // Remove duplicates and keep best results
         const seenIds = new Set<number>();
-        for (const result of searchResult) {
+        for (const result of relevantResults) {
             if (!seenIds.has(result.id)) {
                 seenIds.add(result.id);
                 results.push(result);
             }
         }
+
+        console.log(`📊 After deduplication: ${results.length} results`);
     }
 
-    // Don't sort by scores - keep original order
+    // Sort by similarity scores (higher is better)
+    results.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+    console.log(`🎯 Top 3 results by score:`);
+    results.slice(0, 3).forEach((r, i) => {
+        console.log(`  ${i + 1}. Score: ${r.score?.toFixed(4)}, Text preview: ${r.payload?.text?.substring(0, 50)}...`);
+    });
 
     return {
         results: results.slice(0, topK),
@@ -138,16 +200,24 @@ export function rerankHuggingFaceResults(
 
         // Boost score based on keyword matches
         let keywordMatches = 0;
+        let exactMatches = 0;
+
         queryWords.forEach(word => {
             if (text.includes(word)) {
                 keywordMatches++;
+                // Check for exact word match (surrounded by word boundaries)
+                const exactWordRegex = new RegExp(`\\b${word}\\b`, 'i');
+                if (exactWordRegex.test(text)) {
+                    exactMatches++;
+                }
             }
         });
 
-        // Add keyword match bonus
+        // Add keyword match bonus with higher weight for exact matches
         if (queryWords.length > 0) {
             const keywordBonus = (keywordMatches / queryWords.length) * 0.2;
-            relevanceScore = Math.min(1.0, relevanceScore + keywordBonus);
+            const exactBonus = (exactMatches / queryWords.length) * 0.3;
+            relevanceScore = Math.min(1.0, relevanceScore + keywordBonus + exactBonus);
         }
 
         return {
@@ -157,35 +227,39 @@ export function rerankHuggingFaceResults(
         };
     });
 
-    // Don't sort by reranked scores - keep original order
+    // Sort by reranked scores (higher is better)
+    rerankedResults.sort((a, b) => (b.rerankedScore || 0) - (a.rerankedScore || 0));
+
     return rerankedResults;
 }
 
-// Simple answer generation - filter out contact patterns
 export async function generateAnswerWithHuggingFace(
     query: string,
     context: string
 ): Promise<string> {
-    if (!context || context.trim().length === 0) {
-        return "No relevant information found for your query.";
+    if (!context) {
+        return "No information found.";
     }
 
-    const lines = context.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-    const cleanedLines = [];
+    // Split content into sections by ---
+    const sections = context.split('---');
+    const names = [];
 
-    for (const line of lines) {
-        // Skip lines that look like contact information (contain @ symbols, phone patterns, or are very short)
-        if (line.includes('@') ||
-            line.match(/\+\d/) ||
-            line.match(/mobile|phone|linkedin|github/i) ||
-            line.includes('—') ||
-            line.match(/\d{6}/) ||
-            (line.length < 15 && line.match(/\d{4}/))) {
-            continue;
+    // Get first line from each section (usually the name)
+    for (const section of sections) {
+        const firstLine = section.split('\n')[0]?.trim();
+
+        // Check if it looks like a person name (not too long, has space)
+        if (firstLine &&
+            firstLine.length < 30 &&
+            firstLine.includes(' ') &&
+            !firstLine.includes('@') &&
+            /^[A-Z]/.test(firstLine)) {
+            names.push(firstLine);
         }
-
-        cleanedLines.push(line);
     }
 
-    return cleanedLines.join('\n') || context.trim();
+    return names.length > 0
+        ? names.map(name => `• ${name}`).join('\n')
+        : "No names found.";
 }
