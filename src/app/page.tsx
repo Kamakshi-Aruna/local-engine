@@ -59,7 +59,7 @@ export default function Home() {
               const skills = r.matched_skills && r.matched_skills.length > 0
                 ? `\n   Skills: ${r.matched_skills.join(', ')}`
                 : '';
-              return `${r.rank}. ${r.name} - ${r.role} (${r.language})${skills}`;
+              return `${r.rank}. ${r.name} - ${r.role}${skills}`;
             }).join('\n\n')
           : data.message || 'No results found';
 
@@ -133,7 +133,7 @@ export default function Home() {
               const skills = r.matched_skills && r.matched_skills.length > 0
                 ? `\n   Skills: ${r.matched_skills.join(', ')}`
                 : '';
-              return `${r.rank}. ${r.name} - ${r.role} (${r.language})${skills}`;
+              return `${r.rank}. ${r.name} - ${r.role}${skills}`;
             }).join('\n\n')
           : data.message || 'No results found';
 
