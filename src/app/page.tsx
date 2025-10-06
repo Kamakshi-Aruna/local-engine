@@ -59,7 +59,11 @@ export default function Home() {
               const skills = r.matched_skills && r.matched_skills.length > 0
                 ? `\n   Skills: ${r.matched_skills.join(', ')}`
                 : '';
-              return `${r.rank}. ${r.name} - ${r.role}${skills}`;
+              // Show rerank score only for hybrid mode
+              const scores = searchMode === 'hybrid' && r.rerank_score
+                ? `\n   Scores: Vector ${r.vector_score}% | Rerank ${r.rerank_score}%`
+                : '';
+              return `${r.rank}. ${r.name} - ${r.role}${skills}${scores}`;
             }).join('\n\n')
           : data.message || 'No results found';
 
@@ -133,7 +137,11 @@ export default function Home() {
               const skills = r.matched_skills && r.matched_skills.length > 0
                 ? `\n   Skills: ${r.matched_skills.join(', ')}`
                 : '';
-              return `${r.rank}. ${r.name} - ${r.role}${skills}`;
+              // Show rerank score only for hybrid mode
+              const scores = searchMode === 'hybrid' && r.rerank_score
+                ? `\n   Scores: Vector ${r.vector_score}% | Rerank ${r.rerank_score}%`
+                : '';
+              return `${r.rank}. ${r.name} - ${r.role}${skills}${scores}`;
             }).join('\n\n')
           : data.message || 'No results found';
 
