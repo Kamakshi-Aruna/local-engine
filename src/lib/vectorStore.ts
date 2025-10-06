@@ -1,6 +1,6 @@
 import { QdrantClient } from "@qdrant/js-client-rest";
 
-export async function getVectorStore(collection?: 'local' | 'cohere' | 'openai') {
+export async function getVectorStore(collection?: 'local' | 'cohere' | 'openai' | 'gemini') {
   // Configure client based on whether it's cloud or local
   const config: any = {
     url: process.env.QDRANT_URL || "http://localhost:6333",
@@ -19,6 +19,8 @@ export async function getVectorStore(collection?: 'local' | 'cohere' | 'openai')
     collectionName = process.env.QDRANT_COHERE_COLLECTION || "cohere-search";
   } else if (collection === 'openai') {
     collectionName = process.env.QDRANT_OPENAI_COLLECTION || "openai-search";
+  } else if (collection === 'gemini') {
+    collectionName = process.env.QDRANT_GEMINI_COLLECTION || "gemini-search";
   } else {
     collectionName = process.env.QDRANT_COLLECTION || "local-search";
   }

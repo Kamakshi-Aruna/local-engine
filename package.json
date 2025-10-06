@@ -10,6 +10,7 @@
     "ingest-cvs": "npx tsx scripts/ingest-cvs.ts",
     "ingest-cvs-cohere": "npx tsx scripts/ingest-cvs-cohere.ts",
     "ingest-cvs-openai": "npx tsx scripts/ingest-cvs-openai.ts",
+    "ingest-cvs-gemini": "npx tsx scripts/ingest-cvs-gemini.ts",
     "ingest": "npx tsx scripts/ingest.ts"
   },
   "dependencies": {
