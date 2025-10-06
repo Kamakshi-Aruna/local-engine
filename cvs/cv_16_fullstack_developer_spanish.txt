@@ -1,0 +1,18 @@
+María García
+Correo: maria.garcia@email.es
+
+Desarrolladora Full Stack con 4 años de experiencia
+
+Habilidades: React, Node.js, TypeScript, PostgreSQL, REST API, Express, MongoDB
+
+Experiencia:
+Desarrolladora Full Stack Senior en TechSolutions (2022-2024)
+- Desarrollo de aplicaciones web completas
+- Diseño e implementación de APIs RESTful
+- Optimización de bases de datos
+
+Desarrolladora Full Stack en WebApps (2020-2022)
+- Desarrollo frontend y backend
+- Integración de servicios
+
+Educación: Ingeniería Informática, Universidad de Madrid (2020)

@@ -1,0 +1,42 @@
+Here is a realistic CV for a Frontend Developer with 3 years of experience:
+
+**Nome e Cognomi:** Francesco Rossi
+
+**Contatti:**
+
+* Email: [francesco.rossi@email.it](mailto:francesco.rossi@email.it)
+* Tel.: +39 333 1234567
+* LinkedIn: linkedin.com/in/francescorossi
+
+**Riassunto professionale:** Esperto frontend con esperienza di 3 anni nella creazione di applicazioni web innovative e performanti. Competente nell'utilizzo delle tecnologie React, Vue.js e TypeScript per la gestione dei dati e dell'interfaccia utente.
+
+**Competenze tecniche:**
+
+* React
+* Vue.js
+* TypeScript
+* CSS (Sass, Less)
+* HTML5
+
+**Esperienze lavorative:**
+
+**Junior Frontend Developer**, Startup Italia S.p.A. (2020-2021)
+
+* Contribuito allo sviluppo di un'applicazione web per la gestione dei pagamenti online utilizzando React e TypeScript
+* Collaborato con il team di sviluppo per risolvere problemi tecnici e migliorare le prestazioni dell'applicazione
+
+**Frontend Developer**, Agency Digital S.r.l. (2019-2020)
+
+* Sviluppato un sito web e-commerce utilizzando Vue.js e HTML5 per la gestione del carrello e dei pagamenti
+* Collaborato con il team di design per creare wireframes e mockup di interfacce utente
+
+**Freelance Frontend Developer**, Progetti vari (2018-2019)
+
+* Sviluppato un'applicazione web per la gestione delle iscrizioni online utilizzando React e TypeScript
+* Collaborato con clienti per comprendere le loro esigenze e sviluppare soluzioni personalizzate
+
+**Formazione:**
+
+* Laurea in Informatica, Università degli Studi di Milano (2015-2019)
+
+**Nota:** Il mio curriculum è stato creato con il fine di presentare le mie competenze e esperienze come Frontend Developer. Sono pronto a discutere ulteriormente le mie qualifiche e i progetti che ho realizzato in un colloquio personale.

@@ -1,0 +1,63 @@
+Here is a realistCV for a React Native Developer with 7 years of experience:
+
+**Nombre:** Carlos Andrés González Rodríguez
+
+**Contact Information:**
+
+* Correo electrónico: [carlos.andres.gonzalez@outlook.com](mailto:carlos.andres.gonzalez@outlook.com)
+* Teléfono: +34 615 123456
+* LinkedIn: linkedin.com/in/carlosandresgonzalez/
+
+**Resumen Profesional:**
+
+Experto en el desarrollo de aplicaciones con React Native, con más de siete años de experiencia en creación de interfaces intuitivas y escalables. Me especializo en la integración de Redux y Expo para crear soluciones flexibles y personalizadas.
+
+**Habilidades Técnicas:**
+
+* React Native
+* JavaScript
+* TypeScript
+* Redux
+* Expo
+* Webpack
+* Babel
+* ESLint
+* Git
+
+**Experiencia Laboral:**
+
+**Desarrollador de Aplicaciones**, Compañía XYZ (2018-2022)
+
+* Desarrollé aplicaciones para Android e iOS utilizando React Native y Expo.
+* Integré Redux para gestionar el estado de las aplicaciones.
+* Colaboré con un equipo interdisciplinar para diseñar y desarrollar soluciones personalizadas para clientes.
+
+**Desarrollador Freelance**, Various Clients (2015-2018)
+
+* Desarrollé aplicaciones para Android e iOS para varios clientes, incluyendo una aplicación de comercio electrónico y una aplicación de gestión de tareas.
+* Utilicé React Native y Expo para crear aplicaciones escalables y personalizadas.
+
+**Desarrollador Junior**, Compañía ABC (2012-2015)
+
+* Ayudé a desarrollar aplicaciones web y móviles utilizando tecnologías como React, Redux y JavaScript.
+* Aprendí a utilizar herramientas como Webpack, Babel y ESLint para mejorar la eficiencia del desarrollo.
+
+**Educación:**
+
+* Licenciatura en Ciencias de la Computación, Universidad Nacional de España (2012)
+
+**Certificaciones:**
+
+* Certified React Developer, Reactiflux Academy (2020)
+
+**Idiomas:**
+
+* Español (nativo)
+* Inglés (intermedio)
+
+**Proyectos Personales:**
+
+* WeatherApp: una aplicación para Android e iOS que muestra el clima actual y futuro de diferentes ciudades del mundo.
+* TodoList: una aplicación para Android e iOS que permite a los usuarios crear, editar y eliminar tareas personalizadas.
+
+I hope this helps! Let me know if you need any further adjustments.

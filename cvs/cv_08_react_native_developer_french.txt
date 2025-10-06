@@ -1,0 +1,55 @@
+Here is a realistic CV for a React Native Developer with 3 years of experience:
+
+**Pierre Dupont**
+
+Contact Information:
+Email: [pierredupont@email.com](mailto:pierredupont@email.com)
+Phone: +33 6 09 00 12 34
+LinkedIn: linkedin.com/in/pierredupont
+
+**Professional Summary**
+As a skilled React Native expert, I have a proven track record of delivering high-quality applications that meet the needs of users. With a strong foundation in JavaScript and TypeScript, I leverage my knowledge of Redux and Expo to create scalable and maintainable solutions.
+
+**Technical Skills**
+
+* React Native
+* JavaScript
+* TypeScript
+* Redux
+* Expo
+* Node.js
+* HTML/CSS
+* ESLint
+
+**Work Experience**
+
+**Senior React Native Developer**, Startup France (2020-2022)
+
+* Led the development of a popular e-commerce application for iOS and Android, using React Native and Expo
+* Collaborated with designers to implement custom UI components and ensure seamless integration with backend services
+* Mentored junior developers and provided code reviews to ensure high-quality standards
+
+**React Native Developer**, Company X (2018-2020)
+
+* Contributed to the development of a highly-regarded travel booking application, using React Native and Redux
+* Implemented new features and fixed bugs in collaboration with QA engineers and designers
+* Participated in code reviews and ensured adherence to coding best practices
+
+**Junior React Native Developer**, Company Y (2017-2018)
+
+* Assisted in the development of a food delivery application for iOS and Android, using React Native and Node.js
+* Learned and applied new technologies, such as Redux and TypeScript
+* Worked closely with senior developers to ensure high-quality code and meet project deadlines
+
+**Education**
+
+* Bachelor's degree in Computer Science, University of Lyon (2014-2017)
+
+**Certifications**
+None
+
+**Languages Spoken**
+French (native), English (fluent), Spanish (basic)
+
+**Projects**
+Available upon request.

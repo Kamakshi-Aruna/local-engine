@@ -1,0 +1,18 @@
+Pierre Dubois
+Email: pierre.dubois@email.fr
+
+Développeur Full Stack avec 7 ans d'expérience
+
+Compétences: React, Node.js, TypeScript, PostgreSQL, REST API, GraphQL, Docker
+
+Expérience:
+Développeur Full Stack Senior chez TechFrance (2020-2024)
+- Développement d'applications web complètes
+- Architecture microservices
+- Optimisation des performances
+
+Développeur Full Stack chez StartupParis (2017-2020)
+- Développement frontend et backend
+- Intégration continue
+
+Éducation: Master Informatique, Université Paris (2017)

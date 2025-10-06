@@ -1,0 +1,20 @@
+Thomas Schmidt
+E-Mail: thomas.schmidt@email.de
+
+DevOps Ingenieur mit 7 Jahren Erfahrung
+
+Fähigkeiten: Kubernetes, Docker, CI/CD, AWS, Terraform, Jenkins, Linux, Monitoring, GitOps
+
+Berufserfahrung:
+Senior DevOps Ingenieur bei CloudGmbH (2020-2024)
+- Kubernetes Cluster Management
+- CI/CD Pipeline Entwicklung
+- Cloud Infrastruktur (AWS)
+- Terraform und Ansible Automation
+
+DevOps Ingenieur bei TechBerlin (2017-2020)
+- Docker Containerisierung
+- Automatisierung von Deployments
+- System Monitoring
+
+Ausbildung: Informatik Studium, TU Berlin (2017)

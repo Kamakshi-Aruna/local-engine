@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Header from '@/components/Header';
 import QuestionsSidebar from '@/components/QuestionsSidebar';
 import AnswersArea from '@/components/AnswersArea';
@@ -17,33 +17,9 @@ export default function Home() {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
-  const [uploadLoading, setUploadLoading] = useState(false);
-  const [deletingFile, setDeletingFile] = useState<string | null>(null);
-  const [showUploadModal, setShowUploadModal] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
-
-  // Load uploaded files on component mount
-  const loadUploadedFiles = async () => {
-    try {
-      const response = await fetch('/api/list-files');
-      const data = await response.json();
-
-      if (data.success) {
-        setUploadedFiles(data.files);
-      }
-    } catch (err) {
-      // Silently fail - it's okay if we can't load files
-      console.error('Failed to load uploaded files:', err);
-    }
-  };
-
-  // Load files when component mounts
-  useEffect(() => {
-    loadUploadedFiles();
-  }, []);
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -75,10 +51,20 @@ export default function Home() {
       const data = await response.json();
 
       if (data.success) {
+        // Format the answer from results
+        const formattedAnswer = data.results && data.results.length > 0
+          ? data.results.map((r: any) => {
+              const skills = r.matched_skills && r.matched_skills.length > 0
+                ? `\n   Skills: ${r.matched_skills.join(', ')}`
+                : '';
+              return `${r.rank}. ${r.name} - ${r.role} (${r.language})${skills}`;
+            }).join('\n\n')
+          : data.message || 'No results found';
+
         // Update the message with the answer
         setMessages(prev => prev.map(msg =>
           msg.id === newMessageId
-            ? { ...msg, answer: data.answer }
+            ? { ...msg, answer: formattedAnswer }
             : msg
         ));
       } else {
@@ -98,75 +84,6 @@ export default function Home() {
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !loading) {
       handleSearch();
-    }
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || file.type !== 'application/pdf') {
-      setError('Please select a PDF file');
-      return;
-    }
-
-    setUploadLoading(true);
-    setError('');
-
-    try {
-      const formData = new FormData();
-      formData.append('pdf', file);
-
-      const response = await fetch('/api/upload-pdf', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setUploadedFiles(prev => [...prev, file.name]);
-        setError('');
-        setShowUploadModal(false); // Close modal after successful upload
-        // Reset file input
-        e.target.value = '';
-      } else {
-        setError(data.error || 'Upload failed');
-      }
-    } catch (err) {
-      setError('Failed to upload PDF');
-    } finally {
-      setUploadLoading(false);
-    }
-  };
-
-  const handleDeleteFile = async (filename: string) => {
-    if (!confirm(`Are you sure you want to delete ${filename}?`)) {
-      return;
-    }
-
-    setDeletingFile(filename);
-    setError('');
-
-    try {
-      const response = await fetch('/api/delete-pdf', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ filename }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setUploadedFiles(prev => prev.filter(f => f !== filename));
-        alert(`Successfully deleted ${filename}`);
-      } else {
-        alert(`Error: ${data.error || 'Failed to delete file'}`);
-      }
-    } catch (err) {
-      alert('Error: Failed to delete file');
-    } finally {
-      setDeletingFile(null);
     }
   };
 
@@ -207,10 +124,20 @@ export default function Home() {
       const data = await response.json();
 
       if (data.success) {
+        // Format the answer from results
+        const formattedAnswer = data.results && data.results.length > 0
+          ? data.results.map((r: any) => {
+              const skills = r.matched_skills && r.matched_skills.length > 0
+                ? `\n   Skills: ${r.matched_skills.join(', ')}`
+                : '';
+              return `${r.rank}. ${r.name} - ${r.role} (${r.language})${skills}`;
+            }).join('\n\n')
+          : data.message || 'No results found';
+
         // Update the message with the new answer
         setMessages(prev => prev.map(msg =>
           msg.id === messageId
-            ? { ...msg, answer: data.answer }
+            ? { ...msg, answer: formattedAnswer }
             : msg
         ));
       } else {
@@ -274,13 +201,6 @@ export default function Home() {
               loading={loading}
               handleSearch={handleSearch}
               handleKeyPress={handleKeyPress}
-              showUploadModal={showUploadModal}
-              setShowUploadModal={setShowUploadModal}
-              uploadLoading={uploadLoading}
-              uploadedFiles={uploadedFiles}
-              deletingFile={deletingFile}
-              handleFileUpload={handleFileUpload}
-              handleDeleteFile={handleDeleteFile}
               messages={messages}
             />
           </>
@@ -308,13 +228,6 @@ export default function Home() {
                   loading={loading}
                   handleSearch={handleSearch}
                   handleKeyPress={handleKeyPress}
-                  showUploadModal={showUploadModal}
-                  setShowUploadModal={setShowUploadModal}
-                  uploadLoading={uploadLoading}
-                  uploadedFiles={uploadedFiles}
-                  deletingFile={deletingFile}
-                  handleFileUpload={handleFileUpload}
-                  handleDeleteFile={handleDeleteFile}
                   messages={messages}
                 />
               </div>

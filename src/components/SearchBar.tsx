@@ -1,19 +1,11 @@
-import UploadModal from './UploadModal';
-
 interface SearchBarProps {
   query: string;
   setQuery: (query: string) => void;
   loading: boolean;
   handleSearch: () => void;
   handleKeyPress: (e: React.KeyboardEvent) => void;
-  showUploadModal: boolean;
-  setShowUploadModal: (show: boolean) => void;
-  uploadLoading: boolean;
-  uploadedFiles: string[];
-  deletingFile: string | null;
-  handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleDeleteFile: (filename: string) => void;
   messages: any[];
+
 }
 
 export default function SearchBar({
@@ -22,13 +14,6 @@ export default function SearchBar({
   loading,
   handleSearch,
   handleKeyPress,
-  showUploadModal,
-  setShowUploadModal,
-  uploadLoading,
-  uploadedFiles,
-  deletingFile,
-  handleFileUpload,
-  handleDeleteFile,
   messages,
 }: SearchBarProps) {
   const isEmptyState = messages.length === 0;
@@ -43,34 +28,10 @@ export default function SearchBar({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask me anything about your uploaded PDF documents..."
-              className="w-full pl-4 pr-20 py-4 bg-gray-700 text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400 text-lg"
+              placeholder="Be specific: 'iOS Swift', 'Android Kotlin', 'Flutter Dart', or 'React Native JavaScript'..."
+              className="w-full pl-4 pr-16 py-4 bg-gray-700 text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400 text-lg"
               disabled={loading}
             />
-
-            {/* Upload Button */}
-            <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-              <button
-                onClick={() => setShowUploadModal(!showUploadModal)}
-                className="p-2 text-green-400 hover:text-green-300 transition-colors rounded-lg hover:bg-gray-600"
-                title="Upload PDF"
-              >
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              </button>
-
-              {/* Upload Modal */}
-              <UploadModal
-                showUploadModal={showUploadModal}
-                setShowUploadModal={setShowUploadModal}
-                uploadLoading={uploadLoading}
-                uploadedFiles={uploadedFiles}
-                deletingFile={deletingFile}
-                handleFileUpload={handleFileUpload}
-                handleDeleteFile={handleDeleteFile}
-              />
-            </div>
 
             {/* Send Button */}
             <button
@@ -85,7 +46,7 @@ export default function SearchBar({
                 </svg>
               ) : (
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               )}
             </button>
@@ -95,7 +56,8 @@ export default function SearchBar({
         {/* Welcome Message - Only show when no messages */}
         {messages.length === 0 && (
           <div className="text-center text-gray-400 mt-6">
-            <p className="mb-4">Upload PDFs and ask questions about the content</p>
+            <p className="mb-4">Search for developers using semantic search</p>
+            <p className="text-sm">Try: "iOS developers", "Android Kotlin", or "mobile app developers"</p>
           </div>
         )}
       </div>

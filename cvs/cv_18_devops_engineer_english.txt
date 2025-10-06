@@ -1,0 +1,20 @@
+Sarah Johnson
+Email: sarah.j@email.com
+
+DevOps Engineer with 6 years experience
+
+Skills: Kubernetes, Docker, CI/CD, AWS, Terraform, Jenkins, Linux, Monitoring, Ansible
+
+Experience:
+Senior DevOps Engineer at CloudTech (2021-2024)
+- Managed Kubernetes clusters and container orchestration
+- Implemented CI/CD pipelines with Jenkins
+- Infrastructure as Code with Terraform
+- AWS cloud architecture and optimization
+
+DevOps Engineer at StartupCloud (2018-2021)
+- Docker containerization
+- Automated deployments
+- System monitoring and alerting
+
+Education: BS Computer Engineering, Tech University (2018)

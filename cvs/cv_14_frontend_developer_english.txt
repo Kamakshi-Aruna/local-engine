@@ -1,0 +1,18 @@
+John Smith
+Email: john.smith@email.com
+
+Frontend Developer with 5 years experience
+
+Skills: React, Vue.js, TypeScript, CSS3, HTML5, Webpack, Jest
+
+Experience:
+Senior Frontend Developer at Tech Corp (2021-2024)
+- Built responsive web applications using React and TypeScript
+- Implemented component libraries and design systems
+- Optimized performance and accessibility
+
+Frontend Developer at WebStart (2019-2021)
+- Developed user interfaces with Vue.js
+- Collaborated with UX designers
+
+Education: BS Computer Science, State University (2019)

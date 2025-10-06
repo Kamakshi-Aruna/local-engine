@@ -1,0 +1,19 @@
+Marco Rossi
+Email: marco.rossi@email.it
+
+Ingegnere DevOps con 5 anni di esperienza
+
+Competenze: Kubernetes, Docker, CI/CD, AWS, Terraform, GitLab CI, Linux, Prometheus
+
+Esperienza:
+DevOps Engineer Senior presso TechItalia (2021-2024)
+- Gestione cluster Kubernetes
+- Pipeline CI/CD automatizzate
+- Infrastructure as Code
+- Monitoraggio e logging
+
+DevOps Engineer presso CloudStart (2019-2021)
+- Containerizzazione applicazioni
+- Automazione deployment
+
+Formazione: Laurea in Informatica, Università di Milano (2019)

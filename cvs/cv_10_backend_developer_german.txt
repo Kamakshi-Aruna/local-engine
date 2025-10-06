@@ -1,0 +1,41 @@
+Here is a realistic CV for a Backend Developer with 4 years of experience:
+
+**Vollständiger Name:** Anna Müller
+**Kontaktinformationen:**
+
+* E-Mail: [anna.muelller@email.com](mailto:anna.muelller@email.com)
+* Telefon: +49 (0)173-5432111
+
+**Berufserfahrung:**
+
+**Backend-Entwicklerin bei XYZ Corporation (2022-2024)**
+
+* Entwickelte und implementierte RESTful APIs für die Verarbeitung von Nutzerdaten
+* Arbeite an der Integration von MongoDB als NoSQL-Datenbank mit Node.js-basierten Anwendungen
+* Bearbeitete und optimierte existing PostgreSQL-Databases für bessere Leistung und Skalierbarkeit
+
+**Backend-Entwicklerin bei ABC Startups (2020-2022)**
+
+* Erstellte ein komplett neues Backend-System für eine E-commerce-Plattform mit Python und Flask
+* Implementierte Authentifizierung und Autorisierung mittels JSON Web Tokens (JWT)
+* Koordinierte die Zusammenarbeit zwischen Frontend-Entwicklern und Designern zur Erstellung einer benutzerfreundlichen Benutzeroberfläche
+
+**Junior Backend-Entwicklerin bei DEF Agency (2018-2020)**
+
+* Assistierte bei der Entwicklung eines Node.js-basierten Backends für eine Social-Media-Plattform
+* Erforschte und implementierte verschiedene Bibliotheken wie Express.js und Sequelize
+* Arbeite an der Fehleranalyse und -behebung in einem Team von Entwicklern
+
+**Ausbildung:**
+
+* Bachelor of Science in Informatik, Universität Potsdam (2015-2019)
+
+**Technische Fähigkeiten:**
+
+* Node.js mit Express.js und Sequelize
+* Python mit Flask und Django
+* PostgreSQL und MongoDB als NoSQL-Datenbanken
+* RESTful APIs und JSON Web Tokens (JWT)
+* Knowledge of Agile Development methodologies
+
+I hope this helps! Let me know if you have any further requests.

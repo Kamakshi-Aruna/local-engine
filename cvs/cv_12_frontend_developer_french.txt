@@ -1,0 +1,43 @@
+Here is a realistic CV for a Frontend Developer with 6 years of experience:
+
+**Nom et Prénoms :** Aurélien Dupont
+
+**Adresse e-mail :** [aurelien.dupont@gmail.com](mailto:aurelien.dupont@gmail.com)
+
+**Téléphone :** 06 12 34 56 78
+
+**Résumé professionnel :**
+Expérienceur en développement frontend avec plus de 6 ans d'expérience, je suis passionné par la création de interfaces intuitives et rapides. Mes compétences en React et Vue.js me permettent de concevoir des applications web interactives et efficaces.
+
+**Compétences techniques :**
+
+* Langages de programmation : JavaScript, TypeScript
+* Frameworks frontend : React, Vue.js
+* Technologies web : HTML5, CSS (Sass, Less), Webpack, Babel
+* Outils de build : Webpack, Rollup
+
+**Expérience professionnelle :**
+
+**Développeur frontend**, Agence de design en ligne (2020-2022)
+
+* Conception et développement de sites web avec React et Vue.js
+* Gestion de l'ensemble du cycle de vie d'un projet, depuis la conception jusqu'à la mise en production
+* Travail en équipe avec les designers et les développeurs backend pour intégrer les fonctionnalités aux applications
+
+**Développeur junior**, Start-up de technologie (2018-2020)
+
+* Conception et développement de composants React et Vue.js
+* Intégration de bibliothèques et frameworks dans des projets existants
+* Participation à la maintenance et au développement de projets en cours
+
+**Intégrateur web**, Agence de marketing (2016-2018)
+
+* Conception et intégration de sites web avec HTML5, CSS3 et JavaScript
+* Gestion du contenu et de l'ergonomie des interfaces utilisateur
+* Travail en équipe avec les designers et les développeurs backend pour intégrer les fonctionnalités aux applications
+
+**Éducation :**
+
+* Diplôme de fin d'études supérieures en informatique, Université de Paris (2016)
+
+Note: This CV is written in French and includes specific technologies and job titles to give a more realistic example.

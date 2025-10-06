@@ -1,0 +1,50 @@
+Here is a realistic CV for a Flutter Developer with 5 years of experience:
+
+**Full name:** Alessandro Bianchi
+
+**Contact information:**
+
+* Email: [alessandro.bianchi@email.it](mailto:alessandro.bianchi@email.it)
+* Phone: +39 339 1234567
+* LinkedIn: linkedin.com/in/alessandrobianchi
+
+**Professional summary:**
+Highly skilled and experienced Flutter developer with a strong background in cross-platform application development. Proficient in building scalable, efficient, and user-friendly applications using Flutter, Dart, and related technologies.
+
+**Technical skills:**
+
+* Flutter
+* Dart
+* Firebase (Authentication, Realtime Database, Cloud Firestore)
+* BLoC pattern for state management
+* Provider for state management and dependency injection
+* GraphQL for API integration
+* SQL and NoSQL databases (MySQL, PostgreSQL, MongoDB)
+* Agile methodologies (Scrum, Kanban)
+
+**Work experience:**
+
+1. **Junior Flutter Developer**, Company X (January 2018 - December 2019)
+	* Contributed to the development of a cross-platform e-commerce application using Flutter and Firebase
+	* Implemented BLoC pattern for state management and Provider for dependency injection
+	* Collaborated with designers and product managers to deliver high-quality features on time
+2. **Flutter Developer**, Company Y (January 2020 - December 2021)
+	* Developed a real-time analytics dashboard using Flutter, GraphQL, and Firebase
+	* Implemented data visualization and charting libraries for dashboards and reports
+	* Mentored junior developers and contributed to code reviews and best practices documentation
+3. **Senior Flutter Developer**, Company Z (January 2022 - present)
+	* Led the development of a complex, multi-feature application using Flutter, Firebase, and BLoC pattern
+	* Designed and implemented architectural changes for improved scalability and maintainability
+	* Collaborated with the team to implement CI/CD pipelines using Jenkins and GitLab
+
+**Education:**
+
+* Bachelor's Degree in Computer Science, University of Rome "La Sapienza" (2015-2019)
+
+**Optional:**
+
+* **Certifications:** Google Developers Certification - Flutter Developer (2020)
+* **Languages spoken:** Italian (native), English (fluent), Spanish (basic)
+* **Projects:** Available upon request. Examples include a weather app, a to-do list app, and a simple chatbot.
+
+Note: The experience and skills listed are realistic for an Italian-speaking region, but please keep in mind that this is just a sample CV and you should tailor your own CV to your specific experiences and qualifications.

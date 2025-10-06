@@ -1,0 +1,44 @@
+Here is a realistic CV for a Backend Developer with 4 years of experience:
+
+**Nombre Completo:** Sofía García Martínez
+**Contacto:**
+* Correo electrónico: [sofia.garcia@gmail.com](mailto:sofia.garcia@gmail.com)
+* Teléfono: 987654321
+
+**Resumen Profesional:**
+Desarrolladora Backend con experiencia en creación de aplicaciones web escalables y seguras. Conocimiento profundo de tecnologías como Node.js, Python y bases de datos no relacionales. Experiencia en diseño y implementación de APIs RESTful y manejo de bases de datos relacionales y no relacionales.
+
+**Habilidades Técnicas:**
+* Lenguajes:
+	+ Node.js (Express.js, Koa.js)
+	+ Python (Flask, Django)
+* Bases de datos:
+	+ PostgreSQL
+	+ MongoDB
+* APIs:
+	+ RESTful API (design and implementation)
+
+**Experiencia Laboral:**
+
+**Desarrolladora Backend**, StartUp XYZ (2020-2022)
+
+* Diseñé y implementé un sistema de gestión de usuarios utilizando Node.js, Express.js y PostgreSQL.
+* Creé una API RESTful para integración con otras aplicaciones y servicios.
+* Colaboré con el equipo de desarrollo en la resolución de bugs y mejoramiento del rendimiento.
+
+**Desarrolladora**, Company ABC (2018-2020)
+
+* Desarrollé un sistema de gestión de inventario utilizando Python, Flask y MongoDB.
+* Creé una API RESTful para integración con otras aplicaciones y servicios.
+* Colaboré con el equipo de desarrollo en la resolución de bugs y mejoramiento del rendimiento.
+
+**Trainee**, Company DEF (2016-2018)
+
+* Aprendí los fundamentos de programación y desarrollo web utilizando Node.js y Express.js.
+* Realicé tareas menores como depuración de errores y pruebas de código.
+
+**Educación:**
+
+* **Licenciatura en Ingeniería Informática**, Universidad de Madrid (2012-2016)
+
+Espero que esto te sea útil. Recuerda personalizar tu CV según tus experiencias y habilidades específicas. ¡Buena suerte!

@@ -1,0 +1,17 @@
+Hans Mueller
+E-Mail: hans.mueller@email.de
+
+Fullstack Entwickler mit 6 Jahren Erfahrung
+
+Fähigkeiten: React, Node.js, TypeScript, PostgreSQL, REST API, Docker, Git
+
+Berufserfahrung:
+Senior Fullstack Entwickler bei Digital GmbH (2020-2024)
+- Entwicklung von Webanwendungen mit React und Node.js
+- API-Design und Datenbankoptimierung
+- Microservices-Architektur
+
+Fullstack Entwickler bei StartupLab (2018-2020)
+- Full-Stack-Entwicklung mit modernen Technologien
+
+Ausbildung: Informatik Studium, TU München (2018)

@@ -1,0 +1,55 @@
+**Full Name:** Ethan Thompson
+
+**Contact Information:**
+
+* Email: [ethan.thompson@email.com](mailto:ethan.thompson@email.com)
+* Phone: +44 777 1234
+* LinkedIn: linkedin.com/in/ethanthompsonios
+
+**Professional Summary:**
+Highly motivated and detail-oriented iOS application developer with 3 years of experience in designing, developing, and deploying scalable and user-friendly apps. Proficient in Swift and Objective-C, with a strong understanding of UIKit, SwiftUI, and Core Data. Passionate about creating intuitive and visually appealing interfaces that exceed users' expectations.
+
+**Technical Skills:**
+
+* Programming languages: Swift, Objective-C
+* Frameworks: UIKit, SwiftUI
+* Database management: Core Data
+* Related technologies: Xcode, Cocoa Touch, Grand Central Dispatch (GCD), Core Animation
+
+**Work Experience:**
+
+**iOS App Developer**, CodeCraft Solutions (June 2020 - Present)
+
+* Design and develop high-quality iOS apps for clients across various industries, including e-commerce, finance, and healthcare.
+* Collaborate with designers to create visually appealing interfaces and ensure seamless user experiences.
+* Troubleshoot and debug code issues, optimizing app performance and stability.
+
+**Junior iOS App Developer**, AppSphere (March 2019 - June 2020)
+
+* Assisted in the development of a popular social media app for Android and iOS platforms.
+* Implemented features such as push notifications, in-app purchases, and social sharing.
+* Worked closely with the QA team to identify and resolve bugs.
+
+**iOS Intern**, TechCorp (June 2018 - August 2018)
+
+* Contributed to the development of an enterprise-level iOS app for a major financial institution.
+* Learned and applied best practices for coding, testing, and debugging.
+* Assisted in the integration of third-party APIs and services.
+
+**Education:**
+
+* Bachelor of Science in Computer Science, University of London (2016-2020)
+
+**Certifications:**
+
+* Apple Developer Program Certification
+
+**Languages Spoken:**
+
+* English (native)
+* Spanish (basic proficiency)
+
+**Projects:**
+
+* Personal project: AAReminder (iOS app for tracking medication schedules and reminders)
+* Contributed to an open-source iOS library, SwipeToUnlock, on GitHub

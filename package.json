@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "generate-cvs": "npx tsx scripts/generate-cvs.ts",
+    "ingest-cvs": "npx tsx scripts/ingest-cvs.ts",
     "ingest": "npx tsx scripts/ingest.ts"
   },
   "dependencies": {
@@ -23,6 +25,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }
