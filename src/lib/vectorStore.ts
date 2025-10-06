@@ -1,6 +1,6 @@
 import { QdrantClient } from "@qdrant/js-client-rest";
 
-export async function getVectorStore() {
+export async function getVectorStore(collection?: 'local' | 'cohere') {
   // Configure client based on whether it's cloud or local
   const config: any = {
     url: process.env.QDRANT_URL || "http://localhost:6333",
@@ -13,7 +13,13 @@ export async function getVectorStore() {
 
   const client = new QdrantClient(config);
 
-  const collectionName = process.env.QDRANT_COLLECTION || "local-search";
+  // Select collection based on mode
+  let collectionName: string;
+  if (collection === 'cohere') {
+    collectionName = process.env.QDRANT_COHERE_COLLECTION || "cohere-search";
+  } else {
+    collectionName = process.env.QDRANT_COLLECTION || "local-search";
+  }
 
   // Return a simplified object that the API route can use
   return {

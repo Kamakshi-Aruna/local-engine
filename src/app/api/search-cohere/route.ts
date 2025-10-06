@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { client, collectionName } = await getVectorStore();
+    const { client, collectionName } = await getVectorStore('cohere');
 
     try {
       await client.getCollection(collectionName);
@@ -32,13 +32,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Use local embedding model (same as local search) for vector search
-    const embeddingResponse = await fetch("http://localhost:11434/api/embeddings", {
+    // Use Cohere embedding model for vector search
+    const embeddingResponse = await fetch("https://api.cohere.ai/v1/embed", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Authorization": `Bearer ${cohereApiKey}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        model: process.env.OLLAMA_EMBEDDING_MODEL || "nomic-embed-text",
-        prompt: query,
+        model: "embed-english-v3.0",
+        texts: [query],
+        input_type: "search_query",
+        embedding_types: ["float"]
       }),
     });
 
@@ -47,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     const embeddingData = await embeddingResponse.json();
-    const queryEmbedding = embeddingData.embedding;
+    const queryEmbedding = embeddingData.embeddings.float[0];
 
     if (!queryEmbedding || queryEmbedding.length === 0) {
       throw new Error("Generated embedding is null or empty");
@@ -67,7 +72,7 @@ export async function POST(request: NextRequest) {
       vector: queryEmbedding as number[],
       limit: searchLimit * 3,
       with_payload: true,
-      score_threshold: 0.50,
+      score_threshold: 0.30, // Lower threshold for Cohere embeddings
     });
 
     console.log(`🔎 Vector search returned: ${searchResult.length} results`);
@@ -129,38 +134,48 @@ export async function POST(request: NextRequest) {
 
     async function extractSkillsWithCohere(cvText: string, query: string): Promise<string[]> {
       try {
-        const response = await fetch("https://api.cohere.ai/v1/generate", {
+        console.log(`🔧 Extracting skills with Cohere Chat API...`);
+        const response = await fetch("https://api.cohere.ai/v1/chat", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${cohereApiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "command",
-            prompt: `Extract ONLY technical skills from this CV that match the query. Return as comma-separated list with NO explanation.
+            model: "command-a-03-2025",
+            message: `Extract ONLY technical skills from this CV that match the query. Return as comma-separated list with NO explanation.
 
 Query: "${query}"
 CV: ${cvText.slice(0, 1500)}
 
 Skills:`,
-            max_tokens: 100,
             temperature: 0.3,
           }),
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          let skillsText = data.generations[0]?.text?.trim() || "";
-
-          skillsText = skillsText.replace(/^.*?:\s*/i, '');
-          skillsText = skillsText.replace(/\n\n/g, ',').replace(/\n/g, ',');
-
-          if (skillsText && skillsText !== "None") {
-            return skillsText.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0 && !s.match(/^(Here|The|Based|Relevant)/i));
-          }
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ Cohere API error: ${response.status} - ${errorText}`);
+          return [];
         }
+
+        const data = await response.json();
+        console.log(`✅ Cohere response:`, data.text);
+
+        let skillsText = data.text?.trim() || "";
+
+        skillsText = skillsText.replace(/^.*?:\s*/i, '');
+        skillsText = skillsText.replace(/\n\n/g, ',').replace(/\n/g, ',');
+
+        if (skillsText && skillsText !== "None") {
+          const skills = skillsText.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0 && !s.match(/^(Here|The|Based|Relevant)/i));
+          console.log(`📝 Extracted skills:`, skills);
+          return skills;
+        }
+
+        console.log(`⚠️  No skills found`);
       } catch (error) {
-        console.error("Cohere skill extraction error:", error);
+        console.error("❌ Cohere skill extraction error:", error);
       }
 
       return [];

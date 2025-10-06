@@ -8,6 +8,7 @@
     "start": "next start",
     "generate-cvs": "npx tsx scripts/generate-cvs.ts",
     "ingest-cvs": "npx tsx scripts/ingest-cvs.ts",
+    "ingest-cvs-cohere": "npx tsx scripts/ingest-cvs-cohere.ts",
     "ingest": "npx tsx scripts/ingest.ts"
   },
   "dependencies": {
