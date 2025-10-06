@@ -20,6 +20,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
+  const [searchMode, setSearchMode] = useState<'local' | 'cohere'>('local');
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -40,7 +41,8 @@ export default function Home() {
     setQuery(''); // Clear input immediately
 
     try {
-      const response = await fetch('/api/search', {
+      const endpoint = searchMode === 'cohere' ? '/api/search-cohere' : '/api/search';
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -113,7 +115,8 @@ export default function Home() {
     setError('');
 
     try {
-      const response = await fetch('/api/search', {
+      const endpoint = searchMode === 'cohere' ? '/api/search-cohere' : '/api/search';
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -195,6 +198,33 @@ export default function Home() {
               </div>
             )}
 
+            {/* Search Mode Toggle */}
+            <div className="flex-shrink-0 px-4 pb-2">
+              <div className="max-w-4xl mx-auto flex items-center justify-center gap-2">
+                <span className="text-sm text-gray-400">Search Mode:</span>
+                <button
+                  onClick={() => setSearchMode('local')}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    searchMode === 'local'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Local (Ollama)
+                </button>
+                <button
+                  onClick={() => setSearchMode('cohere')}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    searchMode === 'cohere'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Cohere API
+                </button>
+              </div>
+            </div>
+
             <SearchBar
               query={query}
               setQuery={setQuery}
@@ -221,7 +251,32 @@ export default function Home() {
                 </div>
               )}
 
-              <div className="w-full max-w-4xl">
+              <div className="w-full max-w-4xl space-y-4">
+                {/* Search Mode Toggle */}
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-sm text-gray-400">Search Mode:</span>
+                  <button
+                    onClick={() => setSearchMode('local')}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      searchMode === 'local'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    Local (Ollama)
+                  </button>
+                  <button
+                    onClick={() => setSearchMode('cohere')}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      searchMode === 'cohere'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    Cohere API
+                  </button>
+                </div>
+
                 <SearchBar
                   query={query}
                   setQuery={setQuery}
