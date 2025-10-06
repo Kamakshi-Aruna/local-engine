@@ -123,34 +123,6 @@ export async function POST(request: NextRequest) {
       return "Unknown";
     }
 
-    async function isRelevantCandidate(cvText: string, query: string): Promise<boolean> {
-      try {
-        const response = await fetch("http://localhost:11434/api/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: process.env.OLLAMA_LLM_MODEL || "llama3",
-            prompt: `Is this CV relevant to the search query? Answer only YES or NO.
-
-Query: "${query}"
-CV Summary: ${cvText.slice(0, 500)}
-
-Answer (YES/NO):`,
-            stream: false,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const answer = data.response?.trim().toUpperCase();
-          return answer?.includes("YES") || false;
-        }
-      } catch (error) {
-        console.error("Relevance check error:", error);
-      }
-      return true; // Default to true if check fails
-    }
-
     async function extractSkillsWithLLM(cvText: string, query: string): Promise<string[]> {
       try {
         const response = await fetch("http://localhost:11434/api/generate", {
@@ -190,17 +162,9 @@ If no skills match, return: None`,
       return [];
     }
 
-    const validatedResults = await Promise.all(
-      filteredResults.map(async (result: any) => {
+    const results = await Promise.all(
+      filteredResults.map(async (result: any, index: number) => {
         const cvText = result.payload?.text || "";
-
-        // Check if CV is actually relevant using LLM
-        // const isRelevant = await isRelevantCandidate(cvText, query);
-
-        // if (!isRelevant) {
-        //   return null; // Filter out irrelevant results
-        // }
-
         const name = extractName(cvText);
         const profileType = result.payload?.profile_type || "unknown";
         const language = result.payload?.language || "unknown";
@@ -214,6 +178,7 @@ If no skills match, return: None`,
         const matchedSkills = await extractSkillsWithLLM(cvText, query);
 
         return {
+          rank: index + 1,
           name: name,
           role: roleTitle,
           language: language.charAt(0).toUpperCase() + language.slice(1),
@@ -223,14 +188,6 @@ If no skills match, return: None`,
         };
       })
     );
-
-    // Filter out null results and add rank
-    const results = validatedResults
-      .filter((r): r is NonNullable<typeof r> => r !== null)
-      .map((result, index) => ({
-        rank: index + 1,
-        ...result
-      }));
 
     return NextResponse.json({
       success: true,
