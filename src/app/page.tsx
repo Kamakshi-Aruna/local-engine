@@ -20,7 +20,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
-  const [searchMode, setSearchMode] = useState<'local' | 'cohere'>('local');
+  const [searchMode, setSearchMode] = useState<'local' | 'cohere' | 'openai'>('local');
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -41,7 +41,7 @@ export default function Home() {
     setQuery(''); // Clear input immediately
 
     try {
-      const endpoint = searchMode === 'cohere' ? '/api/search-cohere' : '/api/search';
+      const endpoint = searchMode === 'cohere' ? '/api/search-cohere' : searchMode === 'openai' ? '/api/search-openai' : '/api/search';
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -115,7 +115,7 @@ export default function Home() {
     setError('');
 
     try {
-      const endpoint = searchMode === 'cohere' ? '/api/search-cohere' : '/api/search';
+      const endpoint = searchMode === 'cohere' ? '/api/search-cohere' : searchMode === 'openai' ? '/api/search-openai' : '/api/search';
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -222,6 +222,16 @@ export default function Home() {
                 >
                   Cohere API
                 </button>
+                <button
+                  onClick={() => setSearchMode('openai')}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    searchMode === 'openai'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  OpenAI API
+                </button>
               </div>
             </div>
 
@@ -274,6 +284,16 @@ export default function Home() {
                     }`}
                   >
                     Cohere API
+                  </button>
+                  <button
+                    onClick={() => setSearchMode('openai')}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      searchMode === 'openai'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    OpenAI API
                   </button>
                 </div>
 
